@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b361a5f78c7ebc943932a0654ed8b55f, type: 3}
+  m_Name: PowerUpItemSpeed
+  m_EditorClassIdentifier: 
+  itemID: 0
+  itemName: 
+  itemDescription: 
+  itemIcon: {fileID: 0}
+  isStackable: 1
+  maxStackSize: 99
+  duration: 5
+  speedMultiplier: 1
+  bonusDamage: 0
+  grantsInvincibility: 0
