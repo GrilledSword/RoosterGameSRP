@@ -1,41 +1,37 @@
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// Ezt a komponenst bármilyen GameObject-re ráteheted, ami sebzést okozhat érintéskor.
-/// A logika a szerveren fut a csalások elkerülése végett.
-/// </summary>
 [RequireComponent(typeof(Collider))]
 public class DamageDealer : NetworkBehaviour
 {
-    [Header("Sebzés Beállítások")]
-    [Tooltip("A sebzés mértéke, amit ez az objektum okoz.")]
+    [Header("SebzÃ©s BeÃ¡llÃ­tÃ¡sok")]
+    [Tooltip("A sebzÃ©s mÃ©rtÃ©ke, amit ez az objektum okoz.")]
     [SerializeField] private float damageAmount = 10f;
 
-    [Tooltip("Melyik frakcióhoz tartozik ez a sebzésforrás (pl. ki lõtte ki).")]
+    [Tooltip("Melyik frakciÃ³hoz tartozik ez a sebzÃ©sforrÃ¡s (pl. ki lÅ‘tte ki).")]
     [SerializeField] private Faction sourceFaction;
 
-    [Tooltip("Mely frakció(ka)t sebezheti ez az objektum.")]
+    [Tooltip("Mely frakciÃ³(ka)t sebezheti ez az objektum.")]
     [SerializeField] private Faction targetFactions;
 
-    [Header("Viselkedés")]
-    [Tooltip("Elpusztuljon-e az objektum, miután sebzett? (pl. lövedékek esetén igen, tüskéknél nem).")]
+    [Header("ViselkedÃ©s")]
+    [Tooltip("Elpusztuljon-e az objektum, miutÃ¡n sebzett? (pl. lÃ¶vedÃ©kek esetÃ©n igen, tÃ¼skÃ©knÃ©l nem).")]
     [SerializeField] private bool destroyOnImpact = true;
 
     private void OnTriggerEnter(Collider other)
     {
         if (!IsServer) return;
 
-        // JAVÍTÁS: Nem csak a nekiütközött objektumot, hanem annak szüleit is ellenõrizzük.
-        // Ez megoldja azt a problémát, ha a Collider egy gyerek-objektumon van.
+        // JAVÃTÃS: Nem csak a nekiÃ¼tkÃ¶zÃ¶tt objektumot, hanem annak szÃ¼leit is ellenÅ‘rizzÃ¼k.
+        // Ez megoldja azt a problÃ©mÃ¡t, ha a Collider egy gyerek-objektumon van.
         IDamageable damageableTarget = other.GetComponentInParent<IDamageable>();
 
         if (damageableTarget != null)
         {
-            // Ellenõrizzük, hogy a célpont frakciója szerepel-e a sebezhetõ frakciók között.
+            // EllenÅ‘rizzÃ¼k, hogy a cÃ©lpont frakciÃ³ja szerepel-e a sebezhetÅ‘ frakciÃ³k kÃ¶zÃ¶tt.
             if ((targetFactions & damageableTarget.Faction) != 0)
             {
-                // Alkalmazzuk a sebzést.
+                // Alkalmazzuk a sebzÃ©st.
                 damageableTarget.TakeDamage(damageAmount, sourceFaction);
 
                 // Ha az objektumnak el kell pusztulnia, despawnoljuk.
