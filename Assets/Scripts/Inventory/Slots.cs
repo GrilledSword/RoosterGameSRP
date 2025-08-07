@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -214,5 +215,34 @@ public class Slots : NetworkBehaviour
     private void OnInventoryListChanged(NetworkListEvent<ItemData> changeEvent)
     {
         OnInventoryUpdated?.Invoke();
+    }
+
+    public void LoadInventoryData(List<ItemDataSerializable> itemsToLoad)
+    {
+        if (!IsServer) return;
+
+        for (int i = 0; i < inventoryItems.Count; i++)
+        {
+            if (i < itemsToLoad.Count)
+            {
+                var loadedItem = itemsToLoad[i];
+                if (loadedItem.isEmpty)
+                {
+                    inventoryItems[i] = new ItemData { isEmpty = true };
+                }
+                else
+                {
+                    ItemDefinition itemDef = ItemManager.Instance.GetItemDefinition(loadedItem.itemID);
+                    if (itemDef != null)
+                    {
+                        inventoryItems[i] = new ItemData(loadedItem.itemID, itemDef.itemName, loadedItem.quantity);
+                    }
+                }
+            }
+            else
+            {
+                inventoryItems[i] = new ItemData { isEmpty = true };
+            }
+        }
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using Unity.Cinemachine;
 using Unity.Collections;
@@ -7,7 +8,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-public class PekkaPlayerController : NetworkBehaviour, IDamageable
+public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
 {
     [Header("Mozgás Beállítások")]
     [Tooltip("Pekka mozgás sebessége")]
@@ -22,6 +23,9 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable
     [SerializeField] private LayerMask groundLayer;
     [Tooltip("A dupla ugrások száma amit Pekka végre tud hajtani.")]
     [SerializeField] private int maxDoubleJumps = 1;
+    [Tooltip("Gravitációs erő, ami a karaktert a lejtőkhöz 'tapasztja', hogy ne pattogjon.")]
+    [SerializeField] private float groundedStickyForce = 10f;
+
 
     [Header("Komponens Referenciák")]
     [Tooltip("A Pekka Rigidbody komponense, ami a fizikai mozgást kezeli.")]
@@ -59,7 +63,7 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable
     private NetworkVariable<bool> isDead = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private NetworkVariable<bool> isInvincible = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private NetworkVariable<float> activeSpeedMultiplier = new NetworkVariable<float>(1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-     private Coroutine activePowerUpCoroutine;
+    private Coroutine activePowerUpCoroutine;
     private NetworkVariable<int> score = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     [Header("Sebzés Kezelés")]
@@ -175,7 +179,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable
         score.OnValueChanged += OnScoreChanged;
         isDead.OnValueChanged += OnIsDeadChanged;
         isDamagedState.OnValueChanged += OnIsDamagedStateChanged;
-        isDamagedState.OnValueChanged += OnIsDamagedStateChanged;
 
         if (IsOwner)
         {
@@ -212,6 +215,11 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable
             HandleJumpServer();
             ResetAttackTriggerServer();
             UpdateNetworkAnimatorParametersServer();
+
+            if (networkIsGrounded.Value)
+            {
+                rb.AddForce(Vector3.down * groundedStickyForce, ForceMode.Force);
+            }
         }
     }
 
@@ -250,7 +258,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable
         Vector3 moveDirection = new Vector3(networkMovementInput.Value.x, 0f, 0f).normalized;
         float targetSpeed = moveSpeed * activeSpeedMultiplier.Value;
 
-        // A sprintelés csak akkor lehetséges, ha a játékos NINCS sebzett állapotban.
         if (networkRunInput.Value && !isDamagedState.Value)
         {
             targetSpeed *= runSpeedMultiplier;
@@ -281,7 +288,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable
                 rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
                 PlayJumpSoundClientRpc();
             }
-            // A dupla ugrás csak akkor lehetséges, ha a játékos NINCS sebzett állapotban.
             else if (currentDoubleJumps > 0 && !isDamagedState.Value)
             {
                 rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
@@ -352,14 +358,14 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable
     private IEnumerator DamageInvincibilityCoroutine()
     {
         isInvincible.Value = true;
-        isDamagedState.Value = true; // Animáció indítása
+        isDamagedState.Value = true;
         yield return new WaitForSeconds(invincibilityDurationAfterDamage);
 
         if (activePowerUpCoroutine == null)
         {
             isInvincible.Value = false;
         }
-        isDamagedState.Value = false; // Animáció leállítása
+        isDamagedState.Value = false;
         damageInvincibilityCoroutine = null;
     }
 
@@ -392,7 +398,7 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable
             if (damageInvincibilityCoroutine != null)
             {
                 StopCoroutine(damageInvincibilityCoroutine);
-                isDamagedState.Value = false; // A sebzés animációt is leállítjuk
+                isDamagedState.Value = false;
                 damageInvincibilityCoroutine = null;
             }
             isInvincible.Value = true;
@@ -421,7 +427,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable
         isDead.Value = true;
         rb.linearVelocity = Vector3.zero;
         rb.isKinematic = true;
-        cameraRootSmoothSpeed = 0f;
         GetComponent<Collider>().enabled = false;
         PlayDeathSoundClientRpc();
     }
@@ -484,6 +489,7 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable
             UpdateScoreText(Mathf.RoundToInt(displayedScore));
             yield return null;
         }
+
         displayedScore = targetScore;
         UpdateScoreText(targetScore);
         scoreCountingCoroutine = null;
@@ -496,6 +502,7 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable
             scoreText.text = $"Pontszám: {scoreValue}";
         }
     }
+
     private void OnIsDeadChanged(bool oldIsDead, bool newIsDead)
     {
         if (newIsDead && !oldIsDead)
@@ -571,6 +578,57 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable
             audioSource.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)]);
         }
     }
+
+    public void SaveData(ref GameData data)
+    {
+        // A szerver oldali pozíciót mentjük
+        data.playerPosition = transform.position;
+        data.currentHealth = this.currentHealth.Value;
+        data.score = this.score.Value;
+
+        // Inventory mentése
+        if (slots != null)
+        {
+            data.inventoryItems = new List<ItemDataSerializable>();
+            foreach (var item in slots.GetInventoryItems())
+            {
+                data.inventoryItems.Add(new ItemDataSerializable
+                {
+                    itemID = item.itemID,
+                    quantity = item.quantity,
+                    isEmpty = item.isEmpty
+                });
+            }
+        }
+    }
+
+    public void LoadData(GameData data)
+    {
+        // A betöltés logikáját a szervernek kell végrehajtania
+        if (!IsServer) return;
+
+        // Pozíció beállítása (CharacterController-t használva)
+        if (TryGetComponent<CharacterController>(out var cc))
+        {
+            cc.enabled = false; // Ideiglenesen kikapcsoljuk, hogy ne ütközzön a teleportálással
+            transform.position = data.playerPosition;
+            cc.enabled = true;
+        }
+        else // Visszalépés Rigidbody-hoz
+        {
+            transform.position = data.playerPosition;
+        }
+
+        this.currentHealth.Value = data.currentHealth;
+        this.score.Value = data.score;
+
+        // Inventory betöltése
+        if (slots != null)
+        {
+            slots.LoadInventoryData(data.inventoryItems);
+        }
+    }
+
     void OnDrawGizmos()
     {
         if (groundCheck != null)

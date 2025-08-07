@@ -346,7 +346,7 @@ Transform:
   m_GameObject: {fileID: 1478146261491340763}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.4, z: 0}
+  m_LocalPosition: {x: 0, y: 0.112, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1914,7 +1914,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8876050976752851601}
   serializedVersion: 5
-  m_Mass: 2
+  m_Mass: 3
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -1963,7 +1963,7 @@ SphereCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8876050976752851601}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 46dfa140b63315345bbb03121fd33cc1, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -2025,12 +2025,13 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   moveSpeed: 5
   runSpeedMultiplier: 2
-  jumpForce: 10
-  groundCheckRadius: 0.42
+  jumpForce: 20
+  groundCheckRadius: 0.3
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
   maxDoubleJumps: 1
+  groundedStickyForce: 100
   rb: {fileID: 973462307733027363}
   animator: {fileID: 6107845574459737455}
   groundCheck: {fileID: 7958179178397662135}
