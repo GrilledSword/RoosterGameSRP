@@ -13,18 +13,25 @@ public class GameData
     public List<ItemDataSerializable> inventoryItems;
 
     // Pálya adatai
-    public string sceneName;
+    public string lastSceneName; // Átnevezve, hogy egyértelmûbb legyen
     public int lastCheckpointIndex;
+
+    // --- ÚJ RÉSZ ---
+    // Haladási adatok
+    // Egy lista, ami a teljesített pályák 'levelId'-jait tárolja.
+    public List<string> completedLevelIds;
+    // --- ÚJ RÉSZ VÉGE ---
 
     // Alapértelmezett értékek egy új játékhoz
     public GameData()
     {
-        playerPosition = Vector3.zero; // Ezt majd a kezdõpozícióra kell állítani
+        playerPosition = Vector3.zero;
         currentHealth = 100;
         score = 0;
         inventoryItems = new List<ItemDataSerializable>();
-        sceneName = "SampleScene"; // Cseréld le a kezdõpálya nevére
-        lastCheckpointIndex = -1; // -1 jelenti, hogy nincs checkpoint
+        lastSceneName = "MainMenuScene"; // Kezdõdjön a fõmenüben
+        lastCheckpointIndex = -1;
+        completedLevelIds = new List<string>(); // Üres lista új játéknál
     }
 }
 

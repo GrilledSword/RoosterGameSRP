@@ -2035,7 +2035,7 @@ MonoBehaviour:
   rb: {fileID: 973462307733027363}
   animator: {fileID: 6107845574459737455}
   groundCheck: {fileID: 7958179178397662135}
-  playerCinemachineCameraPrefab: {fileID: 267539416846142303, guid: 445e442e32327374bae706f2f595b5b7, type: 3}
+  playerCinemachineCameraPrefab: {fileID: 0}
   cameraRoot: {fileID: 3551542010566922403}
   cameraRootSmoothSpeed: 2
   cameraRootZPosition: 2

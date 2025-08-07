@@ -113,6 +113,9 @@ public class SaveManager : MonoBehaviour
 
     private List<ISaveable> FindAllSaveableEntities()
     {
+        // JAVÍTVA: A régi, elavult metódust lecseréltük a modern, gyorsabb verzióra.
+        // Ez megkeresi az összes olyan komponenst, ami implementálja az ISaveable interfészt,
+        // beleértve az inaktívakat is, de felesleges rendezés nélkül.
         IEnumerable<ISaveable> saveables = FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None).OfType<ISaveable>();
         return new List<ISaveable>(saveables);
     }
