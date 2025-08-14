@@ -76,8 +76,10 @@
     <Compile Include="Assets\Scripts\DiscoveryBroadcastData.cs" />
     <Compile Include="Assets\Scripts\WorldDefinition.cs" />
     <Compile Include="Assets\Scripts\NetworkDiscovery.cs" />
+    <Compile Include="Assets\Scripts\LevelButtonUI.cs" />
     <Compile Include="Assets\Scripts\Core\GameData.cs" />
     <Compile Include="Assets\Scripts\ScriptableObjects\PowerUpItemDefinition.cs" />
+    <Compile Include="Assets\Scripts\Gameplay\PlayerSoundController.cs" />
     <Compile Include="Assets\Scripts\Utilities\CombineMesh.cs" />
     <Compile Include="Assets\Scripts\Core\ISaveable.cs" />
     <Compile Include="Assets\Scripts\ServerButtonUI.cs" />
@@ -89,6 +91,7 @@
     <Compile Include="Assets\Scripts\DiscoveryResponseData.cs" />
     <Compile Include="Assets\Scripts\Managers\ItemManager.cs" />
     <Compile Include="Assets\Scripts\Core\IDamageable.cs" />
+    <Compile Include="Assets\Scripts\WorldMapManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
@@ -1294,6 +1297,10 @@
     </Reference>
     <Reference Include="Unity.VisualScripting.State">
       <HintPath>Library\ScriptAssemblies\Unity.VisualScripting.State.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.2D.Sprite.Editor">
+      <HintPath>Library\ScriptAssemblies\Unity.2D.Sprite.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.AI.Navigation.Editor.ConversionSystem">

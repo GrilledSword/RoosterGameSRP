@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abfc155673b67864eb7dd4b80e8b6d31, type: 3}
   m_Name: Level1
   m_EditorClassIdentifier: 
-  levelId: 
-  levelName: 
-  levelSceneName: 
-  unlockedByDefault: 0
-  positionX: 0
-  positionY: 0
+  levelId: 12
+  levelName: test
+  levelSceneName: Level_1_1_Scene
+  unlockedByDefault: 1
+  positionX: 0.074
+  positionY: 0.069
   unlocksNodes: []

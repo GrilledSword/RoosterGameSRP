@@ -15,5 +15,6 @@ MonoBehaviour:
   worldId: 123
   worldName: World1
   worldMapSceneName: World1_MapScene
-  worldIcon: {fileID: 0}
-  levels: []
+  worldIcon: {fileID: 21300000, guid: bd84bdaaa34debf418788378de41b2b8, type: 3}
+  levels:
+  - {fileID: 11400000, guid: fafac56f6dbcace4796bef7736ca3567, type: 2}

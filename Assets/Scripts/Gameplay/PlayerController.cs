@@ -7,57 +7,31 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
 {
     [Header("Mozgás Beállítások")]
-    [Tooltip("Pekka mozgás sebessége")]
     [SerializeField] private float moveSpeed = 5f;
-    [Tooltip("Pekka futási sebessége (gyorsabb mint a normál mozgása).")]
     [SerializeField] private float runSpeedMultiplier = 1.5f;
-    [Tooltip("Pekka ugrási ereje")]
     [SerializeField] private float jumpForce = 10f;
-    [Tooltip("Föld ellenörző gömb mérete")]
     [SerializeField] private float groundCheckRadius = 0.2f;
-    [Tooltip("A föld réteg (LayerMask) amivel Pekka kapcsolatba lép")]
     [SerializeField] private LayerMask groundLayer;
-    [Tooltip("A dupla ugrások száma amit Pekka végre tud hajtani.")]
     [SerializeField] private int maxDoubleJumps = 1;
-    [Tooltip("Gravitációs erő, ami a karaktert a lejtőkhöz 'tapasztja', hogy ne pattogjon.")]
     [SerializeField] private float groundedStickyForce = 10f;
 
-
     [Header("Komponens Referenciák")]
-    [Tooltip("A Pekka Rigidbody komponense, ami a fizikai mozgást kezeli.")]
     [SerializeField] private Rigidbody rb;
-    [Tooltip("A Pekka Animator komponense, ami az animációkat kezeli.")]
     [SerializeField] private Animator animator;
-    [Tooltip("A Pekka groundCheckje, ami az földérzékelés állapotgépét kezeli.")]
     [SerializeField] private Transform groundCheck;
+    [SerializeField] private PlayerSoundController soundController;
 
     [Header("Kamera Beállítások")]
-    [Tooltip("A játékos Cinemachine kamerája prefab, amit a játékoshoz rendeljünk.")]
-    [SerializeField] private GameObject playerCinemachineCameraPrefab;
-    private GameObject instantiatedCinemachineCamera;
-    [Tooltip("A kamera gyökér GameObject, ami a játékoshoz van rendelve. Ez mozog a játékos mozgásával.")]
     [SerializeField] private GameObject cameraRoot;
-    [Tooltip("A kamera gyökér GameObject mozgási sebessége.")]
     [SerializeField] private float cameraRootSmoothSpeed = 5f;
-    [Tooltip("A kamera gyökér GameObject Z pozíciója, ami a játékos mozgásával változik.")]
     [SerializeField] private float cameraRootZPosition;
 
-    [Header("Hang Beállítások")]
-    [SerializeField] private AudioSource audioSource;
-    [SerializeField] private AudioClip jumpSound;
-    [SerializeField] private AudioClip landSound;
-    [SerializeField] private AudioClip deathSound;
-    [SerializeField] private AudioClip damageSound;
-    [SerializeField] private AudioClip[] footsteps;
-    private float lastFootstepTime;
-    [SerializeField] private float footstepInterval = 0.3f;
-
     [Header("Karakter Adatok")]
-    [Tooltip("A játékos maximális életereje.")]
     [SerializeField] private float maximumHealth = 100;
     private NetworkVariable<float> currentHealth = new NetworkVariable<float>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private NetworkVariable<bool> isDead = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -67,31 +41,23 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     private NetworkVariable<int> score = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     [Header("Sebzés Kezelés")]
-    [Tooltip("Mennyi ideig sebezhetetlen a játékos, miután sebzést kapott (másodpercben).")]
     [SerializeField] private float invincibilityDurationAfterDamage = 1.5f;
     private Coroutine damageInvincibilityCoroutine;
     private NetworkVariable<bool> isDamagedState = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     [Header("Frakció Beállítás")]
-    [Tooltip("A játékos frakciója.")]
     private Faction faction = Faction.Player;
-
     public Faction Faction => faction;
 
     [Header("Karakter UI")]
-    [Tooltip("A játékos élet csíkja.")]
     [SerializeField] private Slider healthBarSlider;
-    [Tooltip("A játékos pontszám szövege.")]
     [SerializeField] private TextMeshProUGUI scoreText;
-    [Tooltip("Mennyi idő alatt számoljon fel a pontszám a cél értékre (másodpercben).")]
     [SerializeField] private float scoreCountingDuration = 0.5f;
     private float displayedScore = 0f;
     private Coroutine scoreCountingCoroutine;
 
     [Header("Karakter Inventory")]
-    [Tooltip("A játékos inventory UI-ja.")]
     [SerializeField] private GameObject inventoryUI;
-    [Tooltip("A játékos inventory slotjai.")]
     [SerializeField] private Slots slots;
     [SerializeField] private bool isPlayerSpawned = false;
 
@@ -104,7 +70,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     private NetworkVariable<bool> networkIsJumping = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private NetworkVariable<bool> networkIsFalling = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    private bool isJumpingInputPressedLocal = false;
     private bool isRunningInputPressedLocal = false;
     private int currentDoubleJumps;
     private bool isInventoryInputPressedLocal = false;
@@ -115,8 +80,7 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         playerInputActions = new PlayerControls();
         playerInputActions.Player.Move.performed += ctx => networkMovementInput.Value = ctx.ReadValue<Vector2>();
         playerInputActions.Player.Move.canceled += ctx => networkMovementInput.Value = Vector2.zero;
-        playerInputActions.Player.Jump.performed += ctx => isJumpingInputPressedLocal = true;
-        playerInputActions.Player.Jump.canceled += ctx => isJumpingInputPressedLocal = false;
+        playerInputActions.Player.Jump.performed += ctx => UpdateJumpInputServerRpc(true);
         playerInputActions.Player.Sprint.performed += ctx => isRunningInputPressedLocal = true;
         playerInputActions.Player.Sprint.canceled += ctx => isRunningInputPressedLocal = false;
         playerInputActions.Player.Inventory.performed += ctx => isInventoryInputPressedLocal = true;
@@ -127,10 +91,9 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         playerInputActions.Player.Slot4.performed += ctx => slots.UseItemServerRpc(3);
         playerInputActions.Player.Slot5.performed += ctx => slots.UseItemServerRpc(4);
 
-        if (audioSource == null)
+        if (soundController == null)
         {
-            audioSource = GetComponent<AudioSource>();
-            if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+            soundController = GetComponent<PlayerSoundController>();
         }
     }
 
@@ -146,16 +109,13 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         if (IsOwner)
         {
             playerInputActions.Enable();
-            if (playerCinemachineCameraPrefab != null)
+
+            AssignCameraToPlayer();
+            if (NetworkManager.Singleton != null)
             {
-                instantiatedCinemachineCamera = Instantiate(playerCinemachineCameraPrefab);
-                CinemachineCamera virtualCamera = instantiatedCinemachineCamera.GetComponent<CinemachineCamera>();
-                if (virtualCamera != null)
-                {
-                    virtualCamera.Follow = cameraRoot != null ? cameraRoot.transform : transform;
-                    virtualCamera.LookAt = cameraRoot != null ? cameraRoot.transform : transform;
-                }
+                NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoadComplete;
             }
+
             if (inventoryUI != null)
             {
                 inventoryUI.SetActive(false);
@@ -191,10 +151,11 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
 
     public override void OnNetworkDespawn()
     {
-        if (IsOwner && instantiatedCinemachineCamera != null)
+        if (NetworkManager.Singleton != null)
         {
-            Destroy(instantiatedCinemachineCamera);
+            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoadComplete;
         }
+
         networkSpeed.OnValueChanged -= OnSpeedChanged;
         networkIsGrounded.OnValueChanged -= OnIsGroundedChanged;
         networkIsJumping.OnValueChanged -= OnIsJumpingChanged;
@@ -204,6 +165,33 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         score.OnValueChanged -= OnScoreChanged;
         isDead.OnValueChanged -= OnIsDeadChanged;
         isDamagedState.OnValueChanged -= OnIsDamagedStateChanged;
+    }
+
+    private void OnSceneLoadComplete(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    {
+        if (IsOwner)
+        {
+            AssignCameraToPlayer();
+        }
+    }
+
+    private void AssignCameraToPlayer()
+    {
+        CinemachineCamera virtualCamera = FindFirstObjectByType<CinemachineCamera>();
+        if (virtualCamera != null)
+        {
+            virtualCamera.Follow = cameraRoot != null ? cameraRoot.transform : transform;
+            virtualCamera.LookAt = cameraRoot != null ? cameraRoot.transform : transform;
+        }
+        else
+        {
+            Debug.LogError("Nem található CinemachineCamera a jelenetben! Tegyél egyet a pályára.");
+        }
+
+        if (FindFirstObjectByType<AudioListener>() == null)
+        {
+            Debug.LogError("Nem található AudioListener a jelenetben! A hangok nem fognak működni. Tegyél egy AudioListener komponenst a Main Camera-ra.");
+        }
     }
 
     void FixedUpdate()
@@ -227,7 +215,7 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     {
         if (IsOwner)
         {
-            SendInputToServer();
+            networkRunInput.Value = isRunningInputPressedLocal;
             UpdateLocalAnimatorParameters();
             UpdateCameraRootPosition();
             HandleInventoryUI();
@@ -268,33 +256,31 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         {
             transform.rotation = Quaternion.LookRotation(new Vector3(moveDirection.x, 0, 0));
         }
-        float currentHorizontalSpeed = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
-        if (networkIsGrounded.Value && currentHorizontalSpeed > 0.1f && Time.time > lastFootstepTime + footstepInterval)
-        {
-            PlayFootstepSoundClientRpc();
-            lastFootstepTime = Time.time;
-        }
     }
 
     private void HandleJumpServer()
     {
-        if (isDead.Value) return;
-        bool jumpInputReceived = networkJumpInput.Value;
-        networkJumpInput.Value = false;
-        if (jumpInputReceived)
+        if (isDead.Value || !networkJumpInput.Value) return;
+
+        bool jumpExecuted = false;
+
+        if (networkIsGrounded.Value)
         {
-            if (networkIsGrounded.Value)
-            {
-                rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-                PlayJumpSoundClientRpc();
-            }
-            else if (currentDoubleJumps > 0 && !isDamagedState.Value)
-            {
-                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-                rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-                currentDoubleJumps--;
-                PlayJumpSoundClientRpc();
-            }
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            jumpExecuted = true;
+        }
+        else if (currentDoubleJumps > 0 && !isDamagedState.Value)
+        {
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            currentDoubleJumps--;
+            jumpExecuted = true;
+        }
+
+        if (jumpExecuted)
+        {
+            PlayJumpSoundClientRpc();
+            networkJumpInput.Value = false;
         }
     }
 
@@ -314,17 +300,15 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         }
     }
 
-    private void SendInputToServer()
+    [ServerRpc]
+    private void UpdateJumpInputServerRpc(bool jumpInput)
     {
-        if (isJumpingInputPressedLocal)
+        if (jumpInput)
         {
-            UpdateJumpInputServerRpc(true);
-            isJumpingInputPressedLocal = false;
+            networkJumpInput.Value = true;
         }
-        UpdateRunInputServerRpc(isRunningInputPressedLocal);
     }
 
-    [ServerRpc] private void UpdateJumpInputServerRpc(bool jumpInput) => networkJumpInput.Value = jumpInput;
     [ServerRpc]
     private void AttemptAttackServerRpc(int slotIndex)
     {
@@ -546,47 +530,53 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         }
     }
 
-    [ClientRpc] private void PlayJumpSoundClientRpc() => audioSource.PlayOneShot(jumpSound);
-    [ClientRpc] private void PlayLandSoundClientRpc() => audioSource.PlayOneShot(landSound);
-    [ClientRpc] private void PlayDamageSoundClientRpc() => audioSource.PlayOneShot(damageSound);
-    [ClientRpc] private void PlayDeathSoundClientRpc() => audioSource.PlayOneShot(deathSound);
+    // --- HANGKEZELÉS ---
+    // A PlayerController mostantól csak továbbítja a parancsokat a SoundController-nek.
+
+    [ClientRpc]
+    private void PlayJumpSoundClientRpc() => soundController?.PlayJumpSound();
+
+    [ClientRpc]
+    private void PlayLandSoundClientRpc() => soundController?.PlayLandSound();
+
+    [ClientRpc]
+    private void PlayDamageSoundClientRpc() => soundController?.PlayDamageSound();
+
+    [ClientRpc]
+    private void PlayDeathSoundClientRpc() => soundController?.PlayDeathSound();
+
     [ClientRpc]
     public void PlayPickupSoundClientRpc(int itemID)
     {
-        if (audioSource == null) return;
         ItemDefinition itemDef = ItemManager.Instance.GetItemDefinition(itemID);
-        if (itemDef != null && itemDef.pickupSound != null)
+        if (itemDef != null)
         {
-            audioSource.PlayOneShot(itemDef.pickupSound);
+            soundController?.PlayItemSound(itemDef.pickupSound);
         }
     }
+
     [ClientRpc]
     public void PlayUseSoundClientRpc(int itemID)
     {
-        if (audioSource == null) return;
         ItemDefinition itemDef = ItemManager.Instance.GetItemDefinition(itemID);
-        if (itemDef != null && itemDef.useSound != null)
+        if (itemDef != null)
         {
-            audioSource.PlayOneShot(itemDef.useSound);
+            soundController?.PlayItemSound(itemDef.useSound);
         }
     }
-    [ClientRpc]
-    private void PlayFootstepSoundClientRpc()
+
+    // Ezt az Animation Event hívja meg.
+    public void AnimEvent_PlayFootstepSound()
     {
-        if (audioSource != null && footsteps != null && footsteps.Length > 0)
-        {
-            audioSource.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)]);
-        }
+        soundController?.PlayFootstepSound();
     }
 
     public void SaveData(ref GameData data)
     {
-        // A szerver oldali pozíciót mentjük
         data.playerPosition = transform.position;
         data.currentHealth = this.currentHealth.Value;
         data.score = this.score.Value;
 
-        // Inventory mentése
         if (slots != null)
         {
             data.inventoryItems = new List<ItemDataSerializable>();
@@ -604,17 +594,15 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
 
     public void LoadData(GameData data)
     {
-        // A betöltés logikáját a szervernek kell végrehajtania
         if (!IsServer) return;
 
-        // Pozíció beállítása (CharacterController-t használva)
         if (TryGetComponent<CharacterController>(out var cc))
         {
-            cc.enabled = false; // Ideiglenesen kikapcsoljuk, hogy ne ütközzön a teleportálással
+            cc.enabled = false;
             transform.position = data.playerPosition;
             cc.enabled = true;
         }
-        else // Visszalépés Rigidbody-hoz
+        else
         {
             transform.position = data.playerPosition;
         }
@@ -622,7 +610,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         this.currentHealth.Value = data.currentHealth;
         this.score.Value = data.score;
 
-        // Inventory betöltése
         if (slots != null)
         {
             slots.LoadInventoryData(data.inventoryItems);

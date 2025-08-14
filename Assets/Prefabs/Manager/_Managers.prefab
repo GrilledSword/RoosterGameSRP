@@ -105,14 +105,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   serverListManager: {fileID: 7492297030455877322}
-  gameFlowManager: {fileID: 0}
+  gameFlowManager: {fileID: 7440753609223204486}
   mainPanel: {fileID: 0}
   multiplayerPanel: {fileID: 0}
   settingsPanel: {fileID: 0}
   worldSelectPanel: {fileID: 0}
   serverNameInputField: {fileID: 0}
+  isPublicToggle: {fileID: 0}
   worldSelectContent: {fileID: 0}
-  worldButtonPrefab: {fileID: 0}
+  worldButtonPrefab: {fileID: 7308538304589875954, guid: dae4e431124afd64995d43862bae72f0, type: 3}
 --- !u!114 &3429405006060475800
 MonoBehaviour:
   m_ObjectHideFlags: 0
