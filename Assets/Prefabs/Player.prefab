@@ -1907,7 +1907,7 @@ MonoBehaviour:
   rb: {fileID: 973462307733027363}
   animator: {fileID: 6107845574459737455}
   groundCheck: {fileID: 7958179178397662135}
-  soundController: {fileID: 0}
+  soundController: {fileID: 3774874664128848348}
   cameraRoot: {fileID: 3551542010566922403}
   cameraRootSmoothSpeed: 2
   cameraRootZPosition: 2
@@ -1928,7 +1928,7 @@ AudioSource:
   m_GameObject: {fileID: 8876050976752851601}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: -5290105225788539996, guid: 26e1e7f68e65c114cb747832fc97ed75, type: 2}
+  OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 1
@@ -2028,7 +2028,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03920bc964a76944fa32a79cc9c8830f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   audioSource: {fileID: 7204724018221263111}
+  outputAudioMixerGroup: {fileID: -5290105225788539996, guid: 26e1e7f68e65c114cb747832fc97ed75, type: 2}
   jumpSound: {fileID: 8300000, guid: cd0360dd77d00114dbd7b3ca82333834, type: 3}
   landSound: {fileID: 0}
   deathSound: {fileID: 0}

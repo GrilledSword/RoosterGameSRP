@@ -18,7 +18,6 @@ public class ItemPickup : MonoBehaviour
             return;
         }
 
-
         if (other.CompareTag("Player"))
         {
             PekkaPlayerController playerController = other.GetComponent<PekkaPlayerController>();
@@ -31,36 +30,32 @@ public class ItemPickup : MonoBehaviour
                 return;
             }
 
-            // --- UNIVERZÁLIS MÛVELETEK MINDEN FELVÉTELNÉL ---
-            // 1. Pontszám hozzáadása (ha van)
+            // Pontszám hozzáadása
             if (itemDef.scoreValue > 0)
             {
                 playerController.AddScoreServerRpc(itemDef.scoreValue);
             }
 
-            // 2. Felvétel hangjának lejátszása
-            playerController.PlayPickupSoundClientRpc(itemID);
-
-            // --- KATEGÓRIA-SPECIFIKUS MÛVELETEK ---
-            if (itemDef.category == ItemCategory.Coin)
+            // JAVÍTVA: Hang lejátszása az új rendszeren keresztül
+            PlayerSoundController soundController = other.GetComponent<PlayerSoundController>();
+            if (soundController != null)
             {
-                // Az érmék nem kerülnek az inventory-ba, itt végeztünk is velük.
+                // A soundController-nek szólunk, hogy játssza le a hangot minden kliensen.
+                // Az 'true' jelzi, hogy ez egy felvételi (pickup) hang.
+                soundController.PlayItemSoundClientRpc(itemID, true);
             }
-            else // General és Weapon kategóriájú tárgyak
+
+            // Tárgy hozzáadása az inventory-hoz (ha nem érme)
+            if (itemDef.category != ItemCategory.Coin)
             {
                 Slots playerInventory = other.GetComponent<Slots>();
                 if (playerInventory != null)
                 {
                     playerInventory.AddItemServerRpc(itemID, itemDef.itemName, quantity);
                 }
-                else
-                {
-                    Debug.LogError($"A játékosról hiányzik a Slots komponens! A(z) {itemDef.itemName} nem adható hozzá.");
-                }
             }
 
-            // --- VÉGSÕ MÛVELET ---
-            // 3. A felvett objektum eltüntetése a pályáról
+            // Objektum eltüntetése
             GetComponent<NetworkObject>().Despawn();
         }
     }

@@ -12,12 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b361a5f78c7ebc943932a0654ed8b55f, type: 3}
   m_Name: PowerUpItemDamage
   m_EditorClassIdentifier: 
-  itemID: 0
+  itemID: 6
   itemName: 
   itemDescription: 
   itemIcon: {fileID: 0}
+  category: 0
   isStackable: 1
   maxStackSize: 99
+  scoreValue: 0
+  pickupSound: {fileID: 0}
+  useSound: {fileID: 0}
   duration: 5
   speedMultiplier: 1
   bonusDamage: 0

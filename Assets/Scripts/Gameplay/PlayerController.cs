@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using Unity.Cinemachine;
-using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -62,7 +61,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     [SerializeField] private bool isPlayerSpawned = false;
 
     private NetworkVariable<Vector2> networkMovementInput = new NetworkVariable<Vector2>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    private NetworkVariable<bool> networkJumpInput = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private NetworkVariable<bool> networkAttackTrigger = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private NetworkVariable<bool> networkRunInput = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private NetworkVariable<float> networkSpeed = new NetworkVariable<float>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -80,7 +78,7 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         playerInputActions = new PlayerControls();
         playerInputActions.Player.Move.performed += ctx => networkMovementInput.Value = ctx.ReadValue<Vector2>();
         playerInputActions.Player.Move.canceled += ctx => networkMovementInput.Value = Vector2.zero;
-        playerInputActions.Player.Jump.performed += ctx => UpdateJumpInputServerRpc(true);
+        playerInputActions.Player.Jump.performed += ctx => RequestJumpServerRpc();
         playerInputActions.Player.Sprint.performed += ctx => isRunningInputPressedLocal = true;
         playerInputActions.Player.Sprint.canceled += ctx => isRunningInputPressedLocal = false;
         playerInputActions.Player.Inventory.performed += ctx => isInventoryInputPressedLocal = true;
@@ -183,15 +181,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             virtualCamera.Follow = cameraRoot != null ? cameraRoot.transform : transform;
             virtualCamera.LookAt = cameraRoot != null ? cameraRoot.transform : transform;
         }
-        else
-        {
-            Debug.LogError("Nem található CinemachineCamera a jelenetben! Tegyél egyet a pályára.");
-        }
-
-        if (FindFirstObjectByType<AudioListener>() == null)
-        {
-            Debug.LogError("Nem található AudioListener a jelenetben! A hangok nem fognak működni. Tegyél egy AudioListener komponenst a Main Camera-ra.");
-        }
     }
 
     void FixedUpdate()
@@ -200,7 +189,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         {
             CheckGroundStatus();
             HandleMovementServer();
-            HandleJumpServer();
             ResetAttackTriggerServer();
             UpdateNetworkAnimatorParametersServer();
 
@@ -258,32 +246,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         }
     }
 
-    private void HandleJumpServer()
-    {
-        if (isDead.Value || !networkJumpInput.Value) return;
-
-        bool jumpExecuted = false;
-
-        if (networkIsGrounded.Value)
-        {
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            jumpExecuted = true;
-        }
-        else if (currentDoubleJumps > 0 && !isDamagedState.Value)
-        {
-            rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            currentDoubleJumps--;
-            jumpExecuted = true;
-        }
-
-        if (jumpExecuted)
-        {
-            PlayJumpSoundClientRpc();
-            networkJumpInput.Value = false;
-        }
-    }
-
     private void UpdateNetworkAnimatorParametersServer()
     {
         float currentHorizontalSpeed = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
@@ -301,11 +263,29 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     }
 
     [ServerRpc]
-    private void UpdateJumpInputServerRpc(bool jumpInput)
+    private void RequestJumpServerRpc()
     {
-        if (jumpInput)
+        if (isDead.Value) return;
+
+        bool jumpExecuted = false;
+
+        if (networkIsGrounded.Value)
         {
-            networkJumpInput.Value = true;
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            jumpExecuted = true;
+        }
+        else if (currentDoubleJumps > 0 && !isDamagedState.Value)
+        {
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            currentDoubleJumps--;
+            jumpExecuted = true;
+        }
+
+        if (jumpExecuted && soundController != null)
+        {
+            // A szerver közvetlenül a SoundController-nek szól, hogy játssza le a hangot mindenkinél.
+            soundController.PlayJumpSoundClientRpc();
         }
     }
 
@@ -317,14 +297,13 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             slots.TriggerAttackFromSlot(slotIndex);
         }
     }
-    [ServerRpc] private void UpdateRunInputServerRpc(bool runInput) => networkRunInput.Value = runInput;
 
     public void TakeDamage(float damage, Faction sourceFaction)
     {
         if (isDead.Value || isInvincible.Value) return;
 
         currentHealth.Value -= damage;
-        PlayDamageSoundClientRpc();
+        if (soundController != null) soundController.PlayDamageSoundClientRpc();
 
         if (damageInvincibilityCoroutine != null)
         {
@@ -412,7 +391,7 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         rb.linearVelocity = Vector3.zero;
         rb.isKinematic = true;
         GetComponent<Collider>().enabled = false;
-        PlayDeathSoundClientRpc();
+        if (soundController != null) soundController.PlayDeathSoundClientRpc();
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -426,7 +405,10 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     private void OnIsGroundedChanged(bool oldIsGrounded, bool newIsGrounded)
     {
         animator.SetBool("IsGrounded", newIsGrounded);
-        if (!oldIsGrounded && newIsGrounded) PlayLandSoundClientRpc();
+        if (!oldIsGrounded && newIsGrounded && soundController != null)
+        {
+            soundController.PlayLandSoundClientRpc();
+        }
     }
     private void OnIsJumpingChanged(bool oldIsJumping, bool newIsJumping) => animator.SetBool("IsJumping", newIsJumping);
     private void OnIsFallingChanged(bool oldIsFalling, bool newIsFalling) => animator.SetBool("IsFalling", newIsFalling);
@@ -530,45 +512,9 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         }
     }
 
-    // --- HANGKEZELÉS ---
-    // A PlayerController mostantól csak továbbítja a parancsokat a SoundController-nek.
-
-    [ClientRpc]
-    private void PlayJumpSoundClientRpc() => soundController?.PlayJumpSound();
-
-    [ClientRpc]
-    private void PlayLandSoundClientRpc() => soundController?.PlayLandSound();
-
-    [ClientRpc]
-    private void PlayDamageSoundClientRpc() => soundController?.PlayDamageSound();
-
-    [ClientRpc]
-    private void PlayDeathSoundClientRpc() => soundController?.PlayDeathSound();
-
-    [ClientRpc]
-    public void PlayPickupSoundClientRpc(int itemID)
-    {
-        ItemDefinition itemDef = ItemManager.Instance.GetItemDefinition(itemID);
-        if (itemDef != null)
-        {
-            soundController?.PlayItemSound(itemDef.pickupSound);
-        }
-    }
-
-    [ClientRpc]
-    public void PlayUseSoundClientRpc(int itemID)
-    {
-        ItemDefinition itemDef = ItemManager.Instance.GetItemDefinition(itemID);
-        if (itemDef != null)
-        {
-            soundController?.PlayItemSound(itemDef.useSound);
-        }
-    }
-
-    // Ezt az Animation Event hívja meg.
     public void AnimEvent_PlayFootstepSound()
     {
-        soundController?.PlayFootstepSound();
+        soundController?.AnimEvent_PlayFootstepSound();
     }
 
     public void SaveData(ref GameData data)

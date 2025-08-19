@@ -51,7 +51,7 @@ public class SettingsManager : MonoBehaviour
         SetResolution(resolutionIndex);
 
         // FPS
-        SetFPSLimit(PlayerPrefs.GetInt("FPSLimit", 60));
+        SetFPSLimit(PlayerPrefs.GetInt("FPSLimit", 400));
     }
 
     // --- AUDIO ---

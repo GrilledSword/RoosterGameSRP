@@ -53,7 +53,7 @@ MonoBehaviour:
     Prefabs:
       NetworkPrefabsLists:
       - {fileID: 11400000, guid: 86e34b592cb97cb4f96a015558290e3f, type: 2}
-    TickRate: 30
+    TickRate: 15
     ClientConnectionBufferTimeout: 10
     ConnectionApproval: 0
     ConnectionData: 
@@ -64,7 +64,7 @@ MonoBehaviour:
     ForceSamePrefabs: 1
     RecycleNetworkIds: 1
     NetworkIdRecycleDelay: 120
-    RpcHashSize: 0
+    RpcHashSize: 1
     LoadSceneTimeOut: 120
     SpawnTimeout: 10
     EnableNetworkLogs: 1

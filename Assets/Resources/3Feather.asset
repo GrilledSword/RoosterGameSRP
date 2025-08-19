@@ -12,12 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53c4ed87025484244817c6f814f45310, type: 3}
   m_Name: 3Feather
   m_EditorClassIdentifier: 
-  itemID: 0
+  itemID: 2
   itemName: 
   itemDescription: 
   itemIcon: {fileID: 0}
+  category: 0
   isStackable: 1
   maxStackSize: 99
+  scoreValue: 0
+  pickupSound: {fileID: 0}
+  useSound: {fileID: 0}
   healthRestored: 0
   energyRestored: 0
   effectDuration: 0

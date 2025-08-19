@@ -3,24 +3,13 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
-/// <summary>
-/// Kezeli a játékos inventory-ját, beleértve a tárgyak hozzáadását, eltávolítását,
-/// és a specializált fegyver/általános slotok logikáját.
-/// </summary>
 public class Slots : NetworkBehaviour
 {
     [Header("Inventár Beállítások")]
-    [Tooltip("Az inventory teljes mérete (fegyver és általános slotok együtt).")]
     [SerializeField] private int inventorySize = 10;
-
-    [Tooltip("Az első hány slot van a fegyvereknek fenntartva (0-tól kezdve). A többi slot általános célú lesz.")]
     [SerializeField] private int weaponSlotCount = 2;
 
-    // A hálózaton szinkronizált lista, ami a tárgyak adatait tárolja.
     private NetworkList<ItemData> inventoryItems;
-
-    // Esemény, ami akkor sül el, ha az inventory tartalma megváltozik.
-    // A UI menedzser erre iratkozik fel, hogy frissítse a kijelzőt.
     public static event Action OnInventoryUpdated;
 
     void Awake()
@@ -30,24 +19,18 @@ public class Slots : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        // A szerver inicializálja az inventory-t üres slotokkal.
         if (IsServer)
         {
             InitializeInventory();
         }
-        // Minden kliens (és a szerver is) feliratkozik a lista változásaira.
         inventoryItems.OnListChanged += OnInventoryListChanged;
     }
 
     public override void OnNetworkDespawn()
     {
-        // Fontos leiratkozni, hogy elkerüljük a memóriaszivárgást.
         inventoryItems.OnListChanged -= OnInventoryListChanged;
     }
 
-    /// <summary>
-    /// A szerveren feltölti az inventory-t üres adatokkal a játék kezdetekor.
-    /// </summary>
     private void InitializeInventory()
     {
         for (int i = 0; i < inventorySize; i++)
@@ -56,29 +39,19 @@ public class Slots : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// [ServerRpc] Hozzáad egy tárgyat az inventory-hoz.
-    /// A kategória alapján a megfelelő slot-típusba (fegyver/általános) helyezi.
-    /// </summary>
     [ServerRpc(RequireOwnership = false)]
     public void AddItemServerRpc(int itemID, string itemName, int quantity)
     {
         if (!IsServer) return;
 
         ItemDefinition itemDef = ItemManager.Instance.GetItemDefinition(itemID);
-        if (itemDef == null)
-        {
-            Debug.LogError($"Server: Item with ID {itemID} not found.");
-            return;
-        }
+        if (itemDef == null) return;
 
-        // Meghatározzuk a keresési tartományt a tárgy kategóriája alapján.
         int startIndex = (itemDef.category == ItemCategory.Weapon) ? 0 : weaponSlotCount;
         int endIndex = (itemDef.category == ItemCategory.Weapon) ? weaponSlotCount : inventorySize;
 
         bool itemAdded = false;
 
-        // 1. Megpróbáljuk stack-elni egy meglévő tárgyhoz a megfelelő tartományban.
         if (itemDef.isStackable)
         {
             for (int i = startIndex; i < endIndex; i++)
@@ -88,10 +61,8 @@ public class Slots : NetworkBehaviour
                 {
                     int canAdd = itemDef.maxStackSize - currentItem.quantity;
                     int amountToAdd = Mathf.Min(quantity, canAdd);
-
                     currentItem.quantity += amountToAdd;
                     inventoryItems[i] = currentItem;
-
                     quantity -= amountToAdd;
                     if (quantity <= 0)
                     {
@@ -102,7 +73,6 @@ public class Slots : NetworkBehaviour
             }
         }
 
-        // 2. Ha maradt még a tárgyból, keresünk egy üres helyet a megfelelő tartományban.
         if (quantity > 0)
         {
             for (int i = startIndex; i < endIndex; i++)
@@ -115,16 +85,8 @@ public class Slots : NetworkBehaviour
                 }
             }
         }
-
-        if (!itemAdded && quantity > 0)
-        {
-            Debug.LogWarning($"Server: Inventory is full for category '{itemDef.category}'. Could not add {itemName}.");
-        }
     }
 
-    /// <summary>
-    /// [Szerver oldali] A PlayerController hívja meg, amikor a játékos támadni próbál egy fegyver slottal.
-    /// </summary>
     public void TriggerAttackFromSlot(int slotIndex)
     {
         if (!IsServer) return;
@@ -139,14 +101,18 @@ public class Slots : NetworkBehaviour
             if (playerController != null)
             {
                 playerController.ExecuteAttack();
-                playerController.PlayUseSoundClientRpc(itemToAttackWith.itemID);
+
+                // JAVÍTVA: Hang lejátszása az új rendszeren keresztül
+                PlayerSoundController soundController = GetComponent<PlayerSoundController>();
+                if (soundController != null)
+                {
+                    // A 'false' jelzi, hogy ez egy használati (use) hang.
+                    soundController.PlayItemSoundClientRpc(itemToAttackWith.itemID, false);
+                }
             }
         }
     }
 
-    /// <summary>
-    /// [ServerRpc] Egy általános tárgyat használ el a megadott slotból (nem fegyvert).
-    /// </summary>
     [ServerRpc(RequireOwnership = true)]
     public void UseItemServerRpc(int slotIndex)
     {
@@ -174,14 +140,16 @@ public class Slots : NetworkBehaviour
 
         if (itemWasConsumed)
         {
-            playerController.PlayUseSoundClientRpc(itemToUse.itemID);
+            // JAVÍTVA: Hang lejátszása az új rendszeren keresztül
+            PlayerSoundController soundController = GetComponent<PlayerSoundController>();
+            if (soundController != null)
+            {
+                soundController.PlayItemSoundClientRpc(itemToUse.itemID, false);
+            }
             RemoveItemServerRpc(slotIndex, 1);
         }
     }
 
-    /// <summary>
-    /// [ServerRpc] Eltávolít egy megadott mennyiségű tárgyat egy slotból.
-    /// </summary>
     [ServerRpc(RequireOwnership = false)]
     public void RemoveItemServerRpc(int slotIndex, int quantityToRemove = 1)
     {
@@ -201,17 +169,11 @@ public class Slots : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// Visszaadja a teljes inventory listát. A UI menedzser használja.
-    /// </summary>
     public NetworkList<ItemData> GetInventoryItems()
     {
         return inventoryItems;
     }
 
-    /// <summary>
-    /// Callback metódus, ami lefut minden kliensen, ha a szerver oldali lista megváltozik.
-    /// </summary>
     private void OnInventoryListChanged(NetworkListEvent<ItemData> changeEvent)
     {
         OnInventoryUpdated?.Invoke();

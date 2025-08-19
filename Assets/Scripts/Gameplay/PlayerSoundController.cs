@@ -1,15 +1,20 @@
 using UnityEngine;
+using UnityEngine.Audio; // Szükséges az AudioMixerGroup-hoz!
+using Unity.Netcode;
 
 /// <summary>
-/// A játékos karakteréhez tartozó összes hang lejátszásáért felelõs komponens.
-/// Egy helyen kezeli az AudioSource-t és a hangfájlokat.
+/// A játékos karakteréhez tartozó összes hang lejátszásáért felelõs hálózati komponens.
 /// </summary>
 [RequireComponent(typeof(AudioSource))]
-public class PlayerSoundController : MonoBehaviour
+public class PlayerSoundController : NetworkBehaviour
 {
     [Header("Komponens Referenciák")]
     [Tooltip("Az AudioSource, ami a hangokat lejátssza.")]
     [SerializeField] private AudioSource audioSource;
+
+    [Header("Audio Mixer Beállítás")]
+    [Tooltip("Az AudioMixer csoport, amihez ez a hangforrás tartozik (pl. 'SFX').")]
+    [SerializeField] private AudioMixerGroup outputAudioMixerGroup;
 
     [Header("Karakter Hangok")]
     [SerializeField] private AudioClip jumpSound;
@@ -24,43 +29,58 @@ public class PlayerSoundController : MonoBehaviour
         {
             audioSource = GetComponent<AudioSource>();
         }
+        if (outputAudioMixerGroup != null)
+        {
+            audioSource.outputAudioMixerGroup = outputAudioMixerGroup;
+        }
     }
 
-    // --- Publikus metódusok, amiket más szkriptek hívhatnak ---
+    // --- ClientRpc Metódusok ---
+    // A szerver hívja meg ezeket, és minden kliensen lefutnak.
 
-    public void PlayJumpSound()
+    [ClientRpc]
+    public void PlayJumpSoundClientRpc()
     {
         if (jumpSound != null) audioSource.PlayOneShot(jumpSound);
     }
-
-    public void PlayLandSound()
+    
+    [ClientRpc]
+    public void PlayLandSoundClientRpc()
     {
         if (landSound != null) audioSource.PlayOneShot(landSound);
     }
-
-    public void PlayDamageSound()
+    
+    [ClientRpc]
+    public void PlayDamageSoundClientRpc()
     {
         if (damageSound != null) audioSource.PlayOneShot(damageSound);
     }
-
-    public void PlayDeathSound()
+    
+    [ClientRpc]
+    public void PlayDeathSoundClientRpc()
     {
         if (deathSound != null) audioSource.PlayOneShot(deathSound);
     }
 
-    public void PlayFootstepSound()
+    [ClientRpc]
+    public void PlayItemSoundClientRpc(int itemID, bool isPickup)
+    {
+        ItemDefinition itemDef = ItemManager.Instance.GetItemDefinition(itemID);
+        if (itemDef == null) return;
+
+        AudioClip clipToPlay = isPickup ? itemDef.pickupSound : itemDef.useSound;
+        if (clipToPlay != null)
+        {
+            audioSource.PlayOneShot(clipToPlay);
+        }
+    }
+
+    // Ezt az Animation Event hívja meg, de csak a helyi gépen.
+    public void AnimEvent_PlayFootstepSound()
     {
         if (footsteps != null && footsteps.Length > 0)
         {
             audioSource.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)]);
-        }
-    }
-
-    public void PlayItemSound(AudioClip clip)
-    {
-        if (clip != null)
-        {
-            audioSource.PlayOneShot(clip);
         }
     }
 }

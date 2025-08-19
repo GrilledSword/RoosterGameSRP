@@ -18,4 +18,5 @@ MonoBehaviour:
   unlockedByDefault: 1
   positionX: 0.074
   positionY: 0.069
-  unlocksNodes: []
+  unlocksNodes:
+  - {fileID: 11400000}
