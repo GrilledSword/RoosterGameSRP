@@ -20,10 +20,11 @@ public class InGameMenuUI : MonoBehaviour
 
     void Start()
     {
-        menuPanel.SetActive(false);
-        settingsPanel.SetActive(false);
-        if (feedbackText != null) feedbackText.gameObject.SetActive(false);
+        if (menuPanel) menuPanel.SetActive(false);
+        if (settingsPanel) settingsPanel.SetActive(false);
+        if (feedbackText) feedbackText.gameObject.SetActive(false);
     }
+
     public void Toggle()
     {
         isMenuOpen = !isMenuOpen;
@@ -44,10 +45,7 @@ public class InGameMenuUI : MonoBehaviour
         }
     }
 
-    public void OnContinueButtonClicked()
-    {
-        Toggle();
-    }
+    public void OnContinueButtonClicked() => Toggle();
 
     public void OnSettingsButtonClicked()
     {
@@ -63,7 +61,7 @@ public class InGameMenuUI : MonoBehaviour
 
     public void OnSaveButtonClicked()
     {
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost)
+        if (SaveManager.Instance != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost)
         {
             SaveManager.Instance.SaveGame(0);
             ShowFeedback("Játék mentve!");
@@ -73,10 +71,15 @@ public class InGameMenuUI : MonoBehaviour
     public void OnExitToMainMenuButtonClicked()
     {
         Time.timeScale = 1f;
+
+        // JAVÍTVA: Biztonságos leállás
         if (NetworkManager.Singleton != null)
         {
             NetworkManager.Singleton.Shutdown();
         }
+
+        // A Singleton minták miatt a duplikált menedzserek maguktól törlõdnek a jelenet betöltésekor,
+        // így nincs szükség manuális törlésre.
         SceneManager.LoadScene("MainMenuScene");
     }
 
@@ -86,6 +89,7 @@ public class InGameMenuUI : MonoBehaviour
         {
             feedbackText.text = message;
             feedbackText.gameObject.SetActive(true);
+            StopAllCoroutines();
             StartCoroutine(HideFeedbackAfterDelay());
         }
     }

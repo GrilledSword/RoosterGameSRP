@@ -30,14 +30,10 @@ public class GameFlowManager : NetworkBehaviour
 
     private void LoadAllWorldDefinitions()
     {
-        var loadedWorlds = Resources.LoadAll<WorldDefinition>("Worlds");
-        allWorlds = new List<WorldDefinition>(loadedWorlds);
+        allWorlds = new List<WorldDefinition>(Resources.LoadAll<WorldDefinition>("Worlds"));
     }
 
-    public List<WorldDefinition> GetAllWorlds()
-    {
-        return allWorlds;
-    }
+    public List<WorldDefinition> GetAllWorlds() => allWorlds;
 
     public WorldDefinition GetCurrentWorldDefinition()
     {

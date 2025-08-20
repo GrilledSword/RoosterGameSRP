@@ -11,11 +11,9 @@ public class SaveManager : MonoBehaviour
     [Header("Beállítások")]
     [SerializeField] private int saveSlotCount = 3;
     public int SaveSlotCount => saveSlotCount;
-    [SerializeField] private int checkpointSlotIndex = 99;
 
     public GameData CurrentlyLoadedData { get; private set; }
     private string saveFileName = "savegame";
-    private List<ISaveable> saveableEntities;
     private bool isLoading = false;
 
     void Awake()
@@ -30,7 +28,6 @@ public class SaveManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    // A OnEnable/OnDisable a legbiztosabb a feliratkozáshoz DontDestroyOnLoad objektumoknál.
     private void OnEnable()
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -43,18 +40,18 @@ public class SaveManager : MonoBehaviour
 
     public void NewGame()
     {
-        this.CurrentlyLoadedData = new GameData();
+        CurrentlyLoadedData = new GameData();
     }
 
     public void SaveGame(int slotIndex)
     {
-        if (slotIndex >= saveSlotCount && slotIndex != checkpointSlotIndex)
+        if (slotIndex >= saveSlotCount)
         {
             Debug.LogWarning($"Mentés a {slotIndex} indexre nem engedélyezett.");
             return;
         }
 
-        this.saveableEntities = FindAllSaveableEntities();
+        var saveableEntities = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).OfType<ISaveable>();
         GameData newSaveData = new GameData();
         foreach (ISaveable saveable in saveableEntities)
         {
@@ -107,7 +104,7 @@ public class SaveManager : MonoBehaviour
         GameData loadedData = LoadGameDataFromFile(slotIndex);
         if (loadedData != null)
         {
-            this.CurrentlyLoadedData = loadedData;
+            CurrentlyLoadedData = loadedData;
             return true;
         }
         return false;
@@ -118,46 +115,24 @@ public class SaveManager : MonoBehaviour
         CurrentlyLoadedData = null;
     }
 
-    public void StartLoadingProcess(GameData data)
-    {
-        this.CurrentlyLoadedData = data;
-        this.isLoading = true;
-
-        if (Unity.Netcode.NetworkManager.Singleton != null && Unity.Netcode.NetworkManager.Singleton.IsHost)
-        {
-            Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene(CurrentlyLoadedData.lastSceneName, LoadSceneMode.Single);
-        }
-        else
-        {
-            SceneManager.LoadScene(CurrentlyLoadedData.lastSceneName);
-        }
-    }
-
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (this.isLoading)
+        if (isLoading)
         {
             ApplyLoadedData();
-            this.isLoading = false;
+            isLoading = false;
         }
     }
 
     private void ApplyLoadedData()
     {
-        if (this.CurrentlyLoadedData == null) return;
-
-        this.saveableEntities = FindAllSaveableEntities();
+        if (CurrentlyLoadedData == null) return;
+        var saveableEntities = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).OfType<ISaveable>();
         foreach (ISaveable saveable in saveableEntities)
         {
             saveable.LoadData(CurrentlyLoadedData);
         }
         Debug.Log("Betöltött adatok sikeresen alkalmazva.");
-    }
-
-    private List<ISaveable> FindAllSaveableEntities()
-    {
-        // JAVÍTVA: Elavult metódus cseréje
-        return FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).OfType<ISaveable>().ToList();
     }
 
     private string GetSaveFilePath(int slotIndex)
