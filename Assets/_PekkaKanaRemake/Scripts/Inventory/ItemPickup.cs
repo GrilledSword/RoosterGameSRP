@@ -1,22 +1,23 @@
-using UnityEngine;
+using System;
 using Unity.Netcode;
+using UnityEngine;
 
 [RequireComponent(typeof(NetworkObject))]
-public class ItemPickup : MonoBehaviour
+public class ItemPickup : NetworkBehaviour
 {
     [Header("Item Beállítások")]
-    [Tooltip("A felveendõ tárgy ID-ja.")]
     [SerializeField] private int itemID;
-
-    [Tooltip("Mennyi darabot vegyen fel ebbõl a tárgyból a játékos.")]
     [SerializeField] private int quantity = 1;
+
+    private UniqueId _uniqueId;
+    private void Awake()
+    {
+        _uniqueId = GetComponent<UniqueId>();
+    }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!NetworkManager.Singleton.IsServer)
-        {
-            return;
-        }
+        if (!IsServer || !IsSpawned) return;
 
         if (other.CompareTag("Player"))
         {
@@ -36,12 +37,9 @@ public class ItemPickup : MonoBehaviour
                 playerController.AddScoreServerRpc(itemDef.scoreValue);
             }
 
-            // JAVÍTVA: Hang lejátszása az új rendszeren keresztül
             PlayerSoundController soundController = other.GetComponent<PlayerSoundController>();
             if (soundController != null)
             {
-                // A soundController-nek szólunk, hogy játssza le a hangot minden kliensen.
-                // Az 'true' jelzi, hogy ez egy felvételi (pickup) hang.
                 soundController.PlayItemSoundClientRpc(itemID, true);
             }
 
@@ -53,6 +51,10 @@ public class ItemPickup : MonoBehaviour
                 {
                     playerInventory.AddItemServerRpc(itemID, itemDef.itemName, quantity);
                 }
+            }
+            if (SaveManager.Instance != null && _uniqueId != null)
+            {
+                SaveManager.Instance.MarkItemAsCollected(_uniqueId.Id);
             }
 
             // Objektum eltüntetése

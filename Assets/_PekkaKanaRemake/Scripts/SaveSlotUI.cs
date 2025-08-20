@@ -1,42 +1,88 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 using System;
 
 public class SaveSlotUI : MonoBehaviour
 {
-    [Header("Komponens Referenciák")]
-    [SerializeField] private Button button;
-    [SerializeField] private TextMeshProUGUI slotInfoText; // Pl. "Slot 1 - Rooster Island"
-    [SerializeField] private TextMeshProUGUI emptySlotText;  // Pl. "Üres Hely"
+    [Header("UI Referenciák")]
+    [SerializeField] private TextMeshProUGUI slotNameText;
+    [SerializeField] private TextMeshProUGUI lastSavedText;
+    [SerializeField] private TextMeshProUGUI gameModeText;
+    [SerializeField] private Button slotButton;
+    [SerializeField] private Button deleteButton;
 
-    /// <summary>
-    /// Beállítja a gombot a mentési adatok alapján.
-    /// </summary>
-    /// <param name="slotIndex">A mentési hely sorszáma.</param>
-    /// <param name="data">A mentett játékadatok (lehet null, ha üres).</param>
-    /// <param name="onLoadAction">A mûvelet, ami lefut, ha a gombra kattintanak.</param>
-    public void Setup(int slotIndex, GameData data, Action<int> onLoadAction)
+    private int _slotIndex;
+    private LoadGameUIManager _uiManager;
+
+    public void Setup(int slotIndex, GameData data, LoadGameUIManager uiManager)
     {
+        _slotIndex = slotIndex;
+        _uiManager = uiManager;
+
+        // A gombok eseménykezelõinek beállítása.
+        slotButton.onClick.RemoveAllListeners();
+        slotButton.onClick.AddListener(OnSlotClicked);
+
+        if (deleteButton != null)
+        {
+            deleteButton.onClick.RemoveAllListeners();
+            deleteButton.onClick.AddListener(OnDeleteButtonClicked);
+        }
+
         if (data != null)
         {
-            // Ha van mentés, kiírjuk az adatait.
-            slotInfoText.text = $"Mentés {slotIndex + 1}\n<size=24>{data.lastSceneName} | Pont: {data.score}</size>";
-            slotInfoText.gameObject.SetActive(true);
-            emptySlotText.gameObject.SetActive(false);
-            button.interactable = true;
+            // Ha van mentési adat, feltöltjük a mezõket.
+            slotNameText.text = $"Mentés {slotIndex + 1}";
+            lastSavedText.text = string.IsNullOrEmpty(data.lastUpdated) ? "" : $"Mentve: {data.lastUpdated}";
+            if (gameModeText != null)
+            {
+                gameModeText.text = data.isMultiplayer ? "Multiplayer" : "Singleplayer";
+            }
+
+            slotButton.interactable = true;
+
+            // A törlés gombot csak akkor jelenítjük meg, ha van mit törölni.
+            if (deleteButton != null) deleteButton.gameObject.SetActive(true);
         }
         else
         {
-            // Ha nincs mentés, jelezzük, hogy a hely üres.
-            slotInfoText.gameObject.SetActive(false);
-            emptySlotText.text = $"Mentés {slotIndex + 1}\n<size=24>(Üres)</size>";
-            emptySlotText.gameObject.SetActive(true);
-            button.interactable = false; // Az üres gomb nem kattintható.
+            // Ha a slot üres, alapértelmezett szövegeket írunk ki.
+            slotNameText.text = "Üres Hely";
+            lastSavedText.text = "";
+            if (gameModeText != null) gameModeText.text = "";
+
+            slotButton.interactable = false;
+
+            // Ha nincs mentés, a törlés gombot elrejtjük.
+            if (deleteButton != null) deleteButton.gameObject.SetActive(false);
+        }
+    }
+
+    private void OnSlotClicked()
+    {
+        if (_uiManager != null)
+        {
+            _uiManager.OnSaveSlotClicked(_slotIndex);
+        }
+    }
+
+    /// <summary>
+    /// Akkor hívódik meg, ha a játékos a törlés gombra kattint.
+    /// </summary>
+    private void OnDeleteButtonClicked()
+    {
+        // Elõször töröljük a mentési fájlt.
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.Instance.DeleteSaveData(_slotIndex);
         }
 
-        // Eltávolítjuk a régi listenereket, majd hozzáadjuk az újat.
-        button.onClick.RemoveAllListeners();
-        button.onClick.AddListener(() => onLoadAction?.Invoke(slotIndex));
+        // Ezután frissítjük a teljes UI listát, hogy az eltûnt mentés helyén
+        // már az "Üres Hely" felirat jelenjen meg.
+        if (_uiManager != null)
+        {
+            _uiManager.RefreshSaveSlots();
+        }
     }
 }

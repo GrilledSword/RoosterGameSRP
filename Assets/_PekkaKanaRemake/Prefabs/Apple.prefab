@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3283175743060390488}
   - component: {fileID: 2458443037356516616}
   - component: {fileID: 3275918893927075424}
+  - component: {fileID: 1442237281020087013}
   m_Layer: 0
   m_Name: Apple
   m_TagString: Untagged
@@ -54,7 +55,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 1.45
+  m_Radius: 0.64
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &2458443037356516616
 MonoBehaviour:
@@ -68,7 +69,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 793851356
+  GlobalObjectIdHash: 973916115
   InScenePlacedSourceGlobalObjectIdHash: 973916115
   DeferredDespawnTick: 0
   Ownership: 1
@@ -93,8 +94,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8587fa9db886a9245ae39ddf3b2a4cd1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   itemID: 3
   quantity: 1
+--- !u!114 &1442237281020087013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5649996842774608055}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55b847061c637534289eaf7538a6d338, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uniqueId: 05d39456-e787-484d-a148-58a0a22e086d
 --- !u!1001 &2490726908173478405
 PrefabInstance:
   m_ObjectHideFlags: 0

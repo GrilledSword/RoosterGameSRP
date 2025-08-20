@@ -1,12 +1,9 @@
 using UnityEngine;
-using TMPro;
 
 public class LoadGameUIManager : MonoBehaviour
 {
     [Header("UI Referenciák")]
-    [Tooltip("A mentési slot gombokat tartalmazó szülõ objektum.")]
     [SerializeField] private Transform saveSlotContainer;
-    [Tooltip("A mentési slot gomb prefabja.")]
     [SerializeField] private GameObject saveSlotButtonPrefab;
 
     private MainMenuUIManager mainMenuUIManager;
@@ -15,12 +12,15 @@ public class LoadGameUIManager : MonoBehaviour
     {
         mainMenuUIManager = FindFirstObjectByType<MainMenuUIManager>();
     }
+
     void OnEnable()
     {
-        PopulateSaveSlots();
+        RefreshSaveSlots();
     }
-    private void PopulateSaveSlots()
+
+    public void RefreshSaveSlots()
     {
+        // Töröljük a régi gombokat.
         foreach (Transform child in saveSlotContainer)
         {
             Destroy(child.gameObject);
@@ -31,6 +31,8 @@ public class LoadGameUIManager : MonoBehaviour
             Debug.LogError("SaveManager.Instance nem található!");
             return;
         }
+
+        // Újra létrehozzuk a gombokat a friss adatok alapján.
         for (int i = 0; i < SaveManager.Instance.SaveSlotCount; i++)
         {
             GameObject buttonGO = Instantiate(saveSlotButtonPrefab, saveSlotContainer);
@@ -39,10 +41,21 @@ public class LoadGameUIManager : MonoBehaviour
             if (saveSlotUI != null)
             {
                 GameData saveData = SaveManager.Instance.LoadGameDataFromFile(i);
-                saveSlotUI.Setup(i, saveData, (slotIndex) => {
-                    mainMenuUIManager.StartLoadFlow(slotIndex);
-                });
+                saveSlotUI.Setup(i, saveData, this);
             }
+        }
+    }
+
+    // JAVÍTVA: Hozzáadtuk a hiányzó metódust, amit a SaveSlotUI hív, amikor rákattintanak.
+    public void OnSaveSlotClicked(int slotIndex)
+    {
+        if (mainMenuUIManager != null)
+        {
+            mainMenuUIManager.StartLoadFlow(slotIndex);
+        }
+        else
+        {
+            Debug.LogError("MainMenuUIManager referencia nincs beállítva!");
         }
     }
 }

@@ -13,10 +13,11 @@ public class GameFlowManager : NetworkBehaviour
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkList<FixedString32Bytes> CompletedLevelIds { get; private set; } = new NetworkList<FixedString32Bytes>();
     private List<WorldDefinition> allWorlds;
+    [SerializeField] private GameObject loadingScreenPanel;
+    public bool IsMultiplayerSession { get; private set; } = false;
 
     void Awake()
     {
-        // JAVÍTVA: Singleton minta a duplikáció elkerülésére.
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -26,6 +27,61 @@ public class GameFlowManager : NetworkBehaviour
         DontDestroyOnLoad(gameObject);
 
         LoadAllWorldDefinitions();
+    }
+    public override void OnNetworkSpawn()
+    {
+        NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoadCompleted;
+    }
+    private void OnSceneLoadCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    {
+        if (NetworkManager.Singleton.LocalClient.PlayerObject != null)
+        {
+            PekkaPlayerController localPlayer = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PekkaPlayerController>();
+            if (localPlayer != null)
+            {
+                localPlayer.SetPlayerControlActive(false);
+            }
+        }
+        ShowLoadingScreen(true);
+        if (!IsServer) return;
+        foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
+        {
+            if (!clientsCompleted.Contains(clientId))
+            {
+                return;
+            }
+        }
+        StartGameClientRpc();
+    }
+    [ClientRpc]
+    private void StartGameClientRpc()
+    {
+        if (NetworkManager.Singleton.LocalClient.PlayerObject != null)
+        {
+            PekkaPlayerController localPlayer = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PekkaPlayerController>();
+            if (localPlayer != null)
+            {
+                localPlayer.SetPlayerControlActive(true);
+            }
+        }
+        ShowLoadingScreen(false);
+    }
+
+    private void ShowLoadingScreen(bool show)
+    {
+        if (loadingScreenPanel == null)
+        {
+            loadingScreenPanel = GameObject.Find("LoadingScreenPanel");
+        }
+
+        if (loadingScreenPanel != null)
+        {
+            loadingScreenPanel.SetActive(show);
+        }
+        else if (show)
+        {
+            Debug.LogError("LoadingScreenPanel not found in the scene!");
+        }
     }
 
     private void LoadAllWorldDefinitions()
@@ -83,6 +139,30 @@ public class GameFlowManager : NetworkBehaviour
         if (currentWorld != null)
         {
             NetworkManager.Singleton.SceneManager.LoadScene(currentWorld.worldMapSceneName, LoadSceneMode.Single);
+        }
+    }
+
+    public void StartSingleplayerGame(string sceneName)
+    {
+        IsMultiplayerSession = false;
+        NetworkManager.Singleton.StartHost();
+        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+    }
+    public void StartMultiplayerGameAsHost(string sceneName)
+    {
+        IsMultiplayerSession = true;
+        NetworkManager.Singleton.StartHost();
+        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+    }
+    public void LoadLevelAsHost(string sceneName)
+    {
+        if (NetworkManager.Singleton.IsListening)
+        {
+            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+        }
+        else
+        {
+            StartSingleplayerGame(sceneName);
         }
     }
 }

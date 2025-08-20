@@ -4,6 +4,7 @@ using TMPro;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Collections;
+using UnityEngine.SceneManagement;
 
 public class MainMenuUIManager : MonoBehaviour
 {
@@ -40,9 +41,10 @@ public class MainMenuUIManager : MonoBehaviour
             return;
         }
         Instance = this;
-        // Mivel ez a menü csak a fõmenüben létezik, nem kell DontDestroyOnLoad
 
-        FindMissingReferences();
+        if (serverListManager == null) serverListManager = FindFirstObjectByType<ServerListManager>();
+        if (gameFlowManager == null) gameFlowManager = FindFirstObjectByType<GameFlowManager>();
+        if (saveManager == null) saveManager = FindFirstObjectByType<SaveManager>();
     }
 
     void Start()
@@ -50,24 +52,169 @@ public class MainMenuUIManager : MonoBehaviour
         ShowPanel(mainPanel);
         if (serverNameInputField != null) serverNameInputField.text = "Pekka's Game";
     }
-
-    private void FindMissingReferences()
+    private Transform FindDeepChild(Transform parent, string childName)
     {
-        if (serverListManager == null) serverListManager = FindFirstObjectByType<ServerListManager>();
-        if (gameFlowManager == null) gameFlowManager = FindFirstObjectByType<GameFlowManager>();
-        if (saveManager == null) saveManager = FindFirstObjectByType<SaveManager>();
+        foreach (Transform child in parent)
+        {
+            if (child.name == childName) return child;
+            Transform result = FindDeepChild(child, childName);
+            if (result != null) return result;
+        }
+        return null;
+    }
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
 
-        // JAVÍTVA: Panelek automatikus keresése név alapján
-        if (mainPanel == null) mainPanel = transform.Find("MainPanel")?.gameObject;
-        if (multiplayerPanel == null) multiplayerPanel = transform.Find("MultiplayerPanel")?.gameObject;
-        if (settingsPanel == null) settingsPanel = transform.Find("SettingsPanel")?.gameObject;
-        if (worldSelectPanel == null) worldSelectPanel = transform.Find("WorldSelectPanel")?.gameObject;
-        if (loadGamePanel == null) loadGamePanel = transform.Find("LoadGamePanel")?.gameObject;
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == "MainMenuScene")
+        {
+            FindMainMenuSceneObjects();
+        }
+    }
+    private void FindMainMenuSceneObjects()
+    {
+        ServerListManager serverListManager = GetComponent<ServerListManager>();
+        GameObject mainMenuCanvasObject = GameObject.Find("MainMenuCanvas");
 
-        // JAVÍTVA: Prefab automatikus betöltése
+        if (mainMenuCanvasObject == null)
+        {
+            Debug.LogError("Nem található 'MainMenuCanvas' nevû objektum a jelenetben!");
+            return;
+        }
+        Transform canvasTransform = mainMenuCanvasObject.transform;
+
+        mainPanel = canvasTransform.Find("MainPanel")?.gameObject;
+        multiplayerPanel = canvasTransform.Find("MultiplayerPanel")?.gameObject;
+        settingsPanel = canvasTransform.Find("SettingsPanel")?.gameObject;
+        worldSelectPanel = canvasTransform.Find("WorldSelectPanel")?.gameObject;
+        loadGamePanel = canvasTransform.Find("LoadGamePanel")?.gameObject;
+        serverNameInputField = canvasTransform.Find("MultiplayerPanel/ServerNameInputField")?.GetComponent<TMP_InputField>();
+        isPublicToggle = canvasTransform.Find("MultiplayerPanel/PublicPrivateToggle")?.GetComponent<Toggle>();
+        worldSelectContent = canvasTransform.Find("WorldSelectPanel/WorldSelectContent")?.GetComponent<Transform>();
+
+        if (serverListManager == null)
+        {
+            return;
+        }
+        Transform canvasListTransform = serverListManager.transform;
+        serverListManager.serverListContent = canvasTransform.Find("MultiplayerPanel/Scroll View/Viewport/ServerListContent")?.GetComponent<Transform>();
+
+        SetupButtonListeners();
+
+        if (mainPanel == null) Debug.LogError("A 'MainPanel' objektumot nem sikerült megtalálni! Ellenõrizd a nevét és a hierarchiát.");
+        if (multiplayerPanel == null) Debug.LogError("A 'MultiplayerPanel' objektumot nem sikerült megtalálni! Ellenõrizd a nevét és a hierarchiát.");
+
         if (worldButtonPrefab == null)
         {
-            worldButtonPrefab = Resources.Load<GameObject>($"_PekkaKanaRemake/Prefabs/UI/{worldButtonPrefabName}");
+            string prefabPath = "Prefabs/MainMenu/WorldButton"; // A Resources mappán belüli relatív útvonal
+            worldButtonPrefab = Resources.Load<GameObject>(prefabPath);
+
+            if (worldButtonPrefab == null)
+            {
+                Debug.LogError($"A prefab betöltése sikertelen! Nincs '{worldButtonPrefabName}' nevû prefab a 'Resources/{prefabPath}' útvonalon.");
+            }
+        }
+    }
+    private void SetupButtonListeners()
+    {
+        if (mainPanel != null)
+        {
+            // FONTOS: A gombok nevének a Transform hierachiában pontosan meg kell egyeznie az itt megadottakkal!
+            // Példa: MainPanel -> Gombok -> SinglePlayerButton
+
+            Button singlePlayerBtn = FindDeepChild(mainPanel.transform, "SinglePlayerButton")?.GetComponent<Button>();
+            if (singlePlayerBtn != null)
+            {
+                singlePlayerBtn.onClick.RemoveAllListeners(); // Biztonsági okokból töröljük a régieket
+                singlePlayerBtn.onClick.AddListener(OnSingleplayerButtonClicked); // Hozzáadjuk a metódust
+            }
+
+            Button multiplayerBtn = FindDeepChild(mainPanel.transform, "MultiplayerButton")?.GetComponent<Button>();
+            if (multiplayerBtn != null)
+            {
+                multiplayerBtn.onClick.RemoveAllListeners();
+                multiplayerBtn.onClick.AddListener(OnMultiplayerButtonClicked);
+            }
+
+            Button settingsBtn = FindDeepChild(mainPanel.transform, "SettingsButton")?.GetComponent<Button>();
+            if (settingsBtn != null)
+            {
+                settingsBtn.onClick.RemoveAllListeners();
+                settingsBtn.onClick.AddListener(OnSettingsButtonClicked);
+            }
+            Button loadBtn = FindDeepChild(mainPanel.transform, "LoadButton")?.GetComponent<Button>();
+            if (loadBtn != null)
+            {
+                loadBtn.onClick.RemoveAllListeners();
+                loadBtn.onClick.AddListener(OnLoadGameButtonClicked);
+            }
+
+            Button exitBtn = FindDeepChild(mainPanel.transform, "ExitButton")?.GetComponent<Button>();
+            if (exitBtn != null)
+            {
+                exitBtn.onClick.RemoveAllListeners();
+                exitBtn.onClick.AddListener(OnQuitButtonClicked);
+            }
+        }
+        if (multiplayerPanel != null)
+        {
+            Button hostGameBtn = FindDeepChild(multiplayerPanel.transform, "HostGameButton")?.GetComponent<Button>();
+            if (hostGameBtn != null)
+            {
+                hostGameBtn.onClick.RemoveAllListeners();
+                hostGameBtn.onClick.AddListener(OnHostButtonClicked);
+            }
+
+            Button refreshListBtn = FindDeepChild(multiplayerPanel.transform, "RefreshListButton")?.GetComponent<Button>();
+            if (refreshListBtn != null)
+            {
+                refreshListBtn.onClick.RemoveAllListeners();
+                refreshListBtn.onClick.AddListener(OnRefreshButtonClicked);
+            }
+
+            Button backBtn = FindDeepChild(multiplayerPanel.transform, "BackButton")?.GetComponent<Button>();
+            if (backBtn != null)
+            {
+                backBtn.onClick.RemoveAllListeners();
+                backBtn.onClick.AddListener(OnBackToMainButtonClicked);
+            }
+        }
+
+        if (settingsPanel != null)
+        {
+            Button backBtn = FindDeepChild(settingsPanel.transform, "BackButton")?.GetComponent<Button>();
+            if (backBtn != null)
+            {
+                backBtn.onClick.RemoveAllListeners();
+                backBtn.onClick.AddListener(OnBackToMainButtonClicked);
+            }
+        }
+
+        if (loadGamePanel != null)
+        {
+            Button backBtn = FindDeepChild(loadGamePanel.transform, "BackButton")?.GetComponent<Button>();
+            if (backBtn != null)
+            {
+                backBtn.onClick.RemoveAllListeners();
+                backBtn.onClick.AddListener(OnBackToMainButtonClicked);
+            }
+        }
+
+        if (worldSelectPanel != null)
+        {
+            Button backBtn = FindDeepChild(worldSelectPanel.transform, "BackButton")?.GetComponent<Button>();
+            if (backBtn != null)
+            {
+                backBtn.onClick.RemoveAllListeners();
+                backBtn.onClick.AddListener(OnBackToMainButtonClicked);
+            }
         }
     }
 
@@ -79,6 +226,24 @@ public class MainMenuUIManager : MonoBehaviour
         if (settingsPanel) settingsPanel.SetActive(panelToShow == settingsPanel);
         if (worldSelectPanel) worldSelectPanel.SetActive(panelToShow == worldSelectPanel);
         if (loadGamePanel != null) loadGamePanel.SetActive(panelToShow == loadGamePanel);
+    }
+    public void OnSingleplayerButtonClicked()
+    {
+        saveManager.ClearLoadedData();
+        if (worldSelectPanel != null)
+        {
+            mainPanel.SetActive(false);
+            worldSelectPanel.SetActive(true);
+            PopulateWorldSelectUI();
+        }
+        else
+        {
+            Debug.Log("Single Player gomb megnyomva, játék indítása...");
+            if (GameFlowManager.Instance != null)
+            {
+                GameFlowManager.Instance.StartSingleplayerGame("World1_MapScene");
+            }
+        }
     }
 
     public void OnMultiplayerButtonClicked()
@@ -103,7 +268,24 @@ public class MainMenuUIManager : MonoBehaviour
     {
         if (saveManager.LoadGameData(slotIndex))
         {
-            ShowPanel(multiplayerPanel);
+            GameData loadedData = saveManager.CurrentlyLoadedData;
+            if (loadedData == null || string.IsNullOrEmpty(loadedData.lastSceneName))
+            {
+                Debug.LogError($"A(z) {slotIndex} mentési hely hibás vagy üres.");
+                return;
+            }
+
+            saveManager.IsLoading = true;
+            if (loadedData.isMultiplayer)
+            {
+                Debug.Log("Multiplayer mentés betöltése...");
+                GameFlowManager.Instance.StartMultiplayerGameAsHost(loadedData.lastSceneName);
+            }
+            else
+            {
+                Debug.Log("Singleplayer mentés betöltése...");
+                GameFlowManager.Instance.StartSingleplayerGame(loadedData.lastSceneName);
+            }
         }
         else
         {

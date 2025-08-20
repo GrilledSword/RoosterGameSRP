@@ -606,7 +606,7 @@
                 {
                     "name": "",
                     "id": "cee5ac38-3ea1-4832-95a9-f373f5be4a78",
-                    "path": "<Keyboard>/escape",
+                    "path": "<Keyboard>/p",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",

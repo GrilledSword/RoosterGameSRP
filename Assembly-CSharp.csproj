@@ -86,6 +86,7 @@
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\WorldMapManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\LoadGameUIManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\ServerButtonUI.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\UniqueId.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\GameFlowManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Managers\ItemManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\NetworkDiscovery.cs" />

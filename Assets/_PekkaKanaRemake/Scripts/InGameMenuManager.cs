@@ -6,16 +6,14 @@ public class InGameMenuManager : MonoBehaviour
     public static InGameMenuManager Instance { get; private set; }
 
     [Header("Beállítások")]
-    [Tooltip("A játékközbeni menü UI-t tartalmazó prefab.")]
+    [Tooltip("A játékközbeni menü UI-t tartalmazó prefab. Ezt húzd be az Inspectorban.")]
     [SerializeField] private GameObject inGameMenuPrefab;
-    [Tooltip("A prefab neve a Resources mappában, ha fentebb nincs hozzárendelve.")]
-    [SerializeField] private string inGameMenuPrefabName = "InGameMenuCanvas";
 
-    private InGameMenuUI _currentMenuInstance;
+    // Ez a változó fogja tárolni a jelenetben lévõ, tényleges menü objektumot (a Clone-t).
+    [SerializeField] private InGameMenuUI _currentMenuInstance;
 
     void Awake()
     {
-        // JAVÍTVA: Singleton minta
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -23,16 +21,6 @@ public class InGameMenuManager : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-
-        // JAVÍTVA: Automatikus prefab betöltés
-        if (inGameMenuPrefab == null)
-        {
-            inGameMenuPrefab = Resources.Load<GameObject>($"_PekkaKanaRemake/Prefabs/UI/{inGameMenuPrefabName}");
-            if (inGameMenuPrefab == null)
-            {
-                Debug.LogError($"InGameMenuManager: '{inGameMenuPrefabName}' nevû prefab nem található a '_PekkaKanaRemake/Resources/Prefabs/UI/' mappában!");
-            }
-        }
     }
 
     private void OnEnable()
@@ -47,19 +35,39 @@ public class InGameMenuManager : MonoBehaviour
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        // Ha már létezik menü példány, biztonságból megsemmisítjük.
         if (_currentMenuInstance != null)
         {
             Destroy(_currentMenuInstance.gameObject);
             _currentMenuInstance = null;
         }
 
-        if (scene.buildIndex >= 2 && inGameMenuPrefab != null)
+        // Csak a játékjelenetekben (pl. build index 2-tõl) keressük vagy hozzuk létre a menüt.
+        if (scene.buildIndex >= 2)
         {
-            GameObject menuObject = Instantiate(inGameMenuPrefab);
-            _currentMenuInstance = menuObject.GetComponent<InGameMenuUI>();
+            // Elõször megpróbáljuk megkeresni, hátha már van a jelenetben egy InGameMenuUI.
+            _currentMenuInstance = FindAnyObjectByType<InGameMenuUI>();
+
+            // Ha nem találtunk, és a prefab be van állítva az Inspectorban, akkor létrehozzuk.
+            if (_currentMenuInstance == null && inGameMenuPrefab != null)
+            {
+                GameObject menuObject = Instantiate(inGameMenuPrefab);
+                _currentMenuInstance = menuObject.GetComponent<InGameMenuUI>();
+            }
+
+            // Ha még mindig nincs menü, akkor valami nagy baj van.
+            if (_currentMenuInstance == null)
+            {
+                Debug.LogError("InGameMenuManager: Nem sikerült megtalálni vagy létrehozni az InGameMenuUI-t! Ellenõrizd, hogy a prefab be van-e húzva az Inspectorban, és hogy a prefabon van InGameMenuUI szkript.");
+                return;
+            }
         }
     }
 
+    /// <summary>
+    /// Megjeleníti vagy elrejti az aktuális menü példányt.
+    /// A PlayerController hívja meg ezt a metódust.
+    /// </summary>
     public void ToggleMenu()
     {
         if (_currentMenuInstance != null)

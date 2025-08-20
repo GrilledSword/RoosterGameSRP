@@ -11,8 +11,6 @@ using UnityEngine.UI;
 
 public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
 {
-    // ... (A többi változó és mező ugyanaz marad) ...
-
     [Header("Mozgás Beállítások")]
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float runSpeedMultiplier = 1.5f;
@@ -76,54 +74,38 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     private int currentDoubleJumps;
     private bool isInventoryInputPressedLocal = false;
     private PlayerControls playerInputActions;
-
-    // ÚJ: Szótár a karakterek és a sprite indexek összerendelésére
     private Dictionary<char, int> spriteIndexMap;
-
-
-    // ÁTÍRVA: Az Awake metódus most inicializálja a karaktertáblát is
     void Awake()
     {
         playerInputActions = new PlayerControls();
-        playerInputActions.Player.Move.performed += ctx => networkMovementInput.Value = ctx.ReadValue<Vector2>();
-        playerInputActions.Player.Move.canceled += ctx => networkMovementInput.Value = Vector2.zero;
-        playerInputActions.Player.Jump.performed += ctx => RequestJumpServerRpc();
-        playerInputActions.Player.Sprint.performed += ctx => isRunningInputPressedLocal = true;
-        playerInputActions.Player.Sprint.canceled += ctx => isRunningInputPressedLocal = false;
-        playerInputActions.Player.Inventory.performed += ctx => isInventoryInputPressedLocal = true;
-        playerInputActions.Player.Inventory.canceled += ctx => isInventoryInputPressedLocal = false;
-        playerInputActions.Player.Slot1.performed += ctx => AttemptAttackServerRpc(0);
-        playerInputActions.Player.Slot2.performed += ctx => AttemptAttackServerRpc(1);
-        playerInputActions.Player.Slot3.performed += ctx => slots.UseItemServerRpc(2);
-        playerInputActions.Player.Slot4.performed += ctx => slots.UseItemServerRpc(3);
-        playerInputActions.Player.Slot5.performed += ctx => slots.UseItemServerRpc(4);
-
-        playerInputActions.Player.Menu.performed += ctx => ToggleInGameMenu();
 
         if (soundController == null)
         {
             soundController = GetComponent<PlayerSoundController>();
         }
-
-        // ÚJ: Metódus hívás a szótár feltöltéséhez
         InitializeSpriteMap();
     }
+    public void SetPlayerControlActive(bool isActive)
+    {
+        if (!IsOwner) return;
 
-    // ÚJ: Ez a metódus tölti fel a szótárat a képek alapján
+        if (isActive)
+        {
+            playerInputActions.Enable();
+        }
+        else
+        {
+            playerInputActions.Disable();
+        }
+    }
     private void InitializeSpriteMap()
     {
         spriteIndexMap = new Dictionary<char, int>
         {
-            // Számok
             { '0', 29 }, { '1', 30 }, { '2', 31 }, { '3', 32 }, { '4', 33 },
             { '5', 34 }, { '6', 35 }, { '7', 36 }, { '8', 37 }, { '9', 38 },
-
-            // A "Pontszám" betűi (a sprite asset alapján)
-            // A sprite-ok nagybetűsnek tűnnek, de a kereséshez kisbetűket használunk.
             { 'p', 15 }, { 'o', 14 }, { 'n', 13 }, { 't', 19 }, { 's', 18 },
             { 'z', 25 }, { 'á', 26 }, { 'm', 12 },
-
-            // Egyéb karakterek
             { '.', 39 }, { '!', 40 }, { '?', 41 }
         };
     }
@@ -135,36 +117,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             isDead.Value = false;
             score.Value = 0;
         }
-
-        if (IsOwner)
-        {
-            playerInputActions.Enable();
-
-            if (inGameMenuManager == null)
-            {
-                inGameMenuManager = FindFirstObjectByType<InGameMenuManager>();
-            }
-
-            AssignCameraToPlayer();
-            if (NetworkManager.Singleton != null)
-            {
-                NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoadComplete;
-            }
-
-            if (inventoryUI != null)
-            {
-                inventoryUI.SetActive(false);
-            }
-            if (healthBarSlider != null)
-            {
-                healthBarSlider.maxValue = maximumHealth;
-            }
-        }
-        else
-        {
-            playerInputActions.Disable();
-        }
-
         networkSpeed.OnValueChanged += OnSpeedChanged;
         networkIsGrounded.OnValueChanged += OnIsGroundedChanged;
         networkIsJumping.OnValueChanged += OnIsJumpingChanged;
@@ -174,23 +126,43 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         score.OnValueChanged += OnScoreChanged;
         isDead.OnValueChanged += OnIsDeadChanged;
         isDamagedState.OnValueChanged += OnIsDamagedStateChanged;
-
         if (IsOwner)
         {
+            playerInputActions.Player.Move.performed += OnMovePerformed;
+            playerInputActions.Player.Move.canceled += OnMoveCanceled;
+            playerInputActions.Player.Jump.performed += OnJumpPerformed;
+            playerInputActions.Player.Sprint.performed += OnSprintPerformed;
+            playerInputActions.Player.Sprint.canceled += OnSprintCanceled;
+            playerInputActions.Player.Inventory.performed += OnInventoryPerformed;
+            playerInputActions.Player.Inventory.canceled += OnInventoryCanceled;
+            playerInputActions.Player.Slot1.performed += OnSlot1Performed;
+            playerInputActions.Player.Slot2.performed += OnSlot2Performed;
+            playerInputActions.Player.Slot3.performed += OnSlot3Performed;
+            playerInputActions.Player.Slot4.performed += OnSlot4Performed;
+            playerInputActions.Player.Slot5.performed += OnSlot5Performed;
+            playerInputActions.Player.Menu.performed += OnMenuPerformed;
+            playerInputActions.Enable();
+
+            if (SaveManager.Instance != null && SaveManager.Instance.IsLoading)
+            {
+                LoadData(SaveManager.Instance.CurrentlyLoadedData);
+                SaveManager.Instance.IsLoading = false;
+            }
+            if (inGameMenuManager == null) inGameMenuManager = FindFirstObjectByType<InGameMenuManager>();
+            AssignCameraToPlayer();
+            if (NetworkManager.Singleton != null) NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoadComplete;
+            if (inventoryUI != null) inventoryUI.SetActive(false);
+            if (healthBarSlider != null) healthBarSlider.maxValue = maximumHealth;
+
             OnHealthChanged(0, currentHealth.Value);
             displayedScore = score.Value;
             UpdateScoreText(score.Value);
             isPlayerSpawned = true;
         }
     }
-
     public override void OnNetworkDespawn()
     {
-        if (NetworkManager.Singleton != null)
-        {
-            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoadComplete;
-        }
-
+        // Leiratkozunk az eseményekről, hogy elkerüljük a memóriaszivárgást.
         networkSpeed.OnValueChanged -= OnSpeedChanged;
         networkIsGrounded.OnValueChanged -= OnIsGroundedChanged;
         networkIsJumping.OnValueChanged -= OnIsJumpingChanged;
@@ -200,8 +172,40 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         score.OnValueChanged -= OnScoreChanged;
         isDead.OnValueChanged -= OnIsDeadChanged;
         isDamagedState.OnValueChanged -= OnIsDamagedStateChanged;
-    }
 
+        if (IsOwner)
+        {
+            playerInputActions.Player.Move.performed -= OnMovePerformed;
+            playerInputActions.Player.Move.canceled -= OnMoveCanceled;
+            playerInputActions.Player.Jump.performed -= OnJumpPerformed;
+            playerInputActions.Player.Sprint.performed -= OnSprintPerformed;
+            playerInputActions.Player.Sprint.canceled -= OnSprintCanceled;
+            playerInputActions.Player.Inventory.performed -= OnInventoryPerformed;
+            playerInputActions.Player.Inventory.canceled -= OnInventoryCanceled;
+            playerInputActions.Player.Slot1.performed -= OnSlot1Performed;
+            playerInputActions.Player.Slot2.performed -= OnSlot2Performed;
+            playerInputActions.Player.Slot3.performed -= OnSlot3Performed;
+            playerInputActions.Player.Slot4.performed -= OnSlot4Performed;
+            playerInputActions.Player.Slot5.performed -= OnSlot5Performed;
+            playerInputActions.Player.Menu.performed -= OnMenuPerformed;
+            playerInputActions.Disable();
+
+            if (NetworkManager.Singleton != null) NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoadComplete;
+        }
+    }
+    private void OnMovePerformed(InputAction.CallbackContext ctx) => networkMovementInput.Value = ctx.ReadValue<Vector2>();
+    private void OnMoveCanceled(InputAction.CallbackContext ctx) => networkMovementInput.Value = Vector2.zero;
+    private void OnJumpPerformed(InputAction.CallbackContext ctx) => RequestJumpServerRpc();
+    private void OnSprintPerformed(InputAction.CallbackContext ctx) => isRunningInputPressedLocal = true;
+    private void OnSprintCanceled(InputAction.CallbackContext ctx) => isRunningInputPressedLocal = false;
+    private void OnInventoryPerformed(InputAction.CallbackContext ctx) => isInventoryInputPressedLocal = true;
+    private void OnInventoryCanceled(InputAction.CallbackContext ctx) => isInventoryInputPressedLocal = false;
+    private void OnSlot1Performed(InputAction.CallbackContext ctx) => AttemptAttackServerRpc(0);
+    private void OnSlot2Performed(InputAction.CallbackContext ctx) => AttemptAttackServerRpc(1);
+    private void OnSlot3Performed(InputAction.CallbackContext ctx) => slots.UseItemServerRpc(2);
+    private void OnSlot4Performed(InputAction.CallbackContext ctx) => slots.UseItemServerRpc(3);
+    private void OnSlot5Performed(InputAction.CallbackContext ctx) => slots.UseItemServerRpc(4);
+    private void OnMenuPerformed(InputAction.CallbackContext ctx) => ToggleInGameMenu();
     private void OnSceneLoadComplete(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
         if (IsOwner)
@@ -209,7 +213,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             AssignCameraToPlayer();
         }
     }
-
     private void AssignCameraToPlayer()
     {
         var virtualCamera = FindAnyObjectByType<CinemachineCamera>();
@@ -219,7 +222,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             virtualCamera.LookAt = cameraRoot != null ? cameraRoot.transform : transform;
         }
     }
-
     void FixedUpdate()
     {
         if (IsServer)
@@ -235,7 +237,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             }
         }
     }
-
     void Update()
     {
         if (IsOwner)
@@ -254,7 +255,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             inGameMenuManager.ToggleMenu();
         }
     }
-
     private void ResetAttackTriggerServer()
     {
         if (networkAttackTrigger.Value)
@@ -262,7 +262,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             networkAttackTrigger.Value = false;
         }
     }
-
     private void CheckGroundStatus()
     {
         bool wasGrounded = networkIsGrounded.Value;
@@ -272,7 +271,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             currentDoubleJumps = maxDoubleJumps;
         }
     }
-
     private void HandleMovementServer()
     {
         if (isDead.Value) return;
@@ -290,7 +288,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             transform.rotation = Quaternion.LookRotation(new Vector3(moveDirection.x, 0, 0));
         }
     }
-
     private void UpdateNetworkAnimatorParametersServer()
     {
         float currentHorizontalSpeed = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
@@ -306,7 +303,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             networkIsFalling.Value = false;
         }
     }
-
     [ServerRpc]
     private void RequestJumpServerRpc()
     {
@@ -332,7 +328,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             soundController.PlayJumpSoundClientRpc();
         }
     }
-
     [ServerRpc]
     private void AttemptAttackServerRpc(int slotIndex)
     {
@@ -341,7 +336,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             slots.TriggerAttackFromSlot(slotIndex);
         }
     }
-
     public void TakeDamage(float damage, Faction sourceFaction)
     {
         if (isDead.Value || isInvincible.Value) return;
@@ -361,7 +355,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             DieServerRpc();
         }
     }
-
     private IEnumerator DamageInvincibilityCoroutine()
     {
         isInvincible.Value = true;
@@ -375,14 +368,12 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         isDamagedState.Value = false;
         damageInvincibilityCoroutine = null;
     }
-
     [ServerRpc(RequireOwnership = false)]
     public void HealServerRpc(float amount)
     {
         if (isDead.Value) return;
         currentHealth.Value = Mathf.Min(currentHealth.Value + amount, maximumHealth);
     }
-
     [ServerRpc(RequireOwnership = false)]
     public void ApplyPowerUpServerRpc(int itemID)
     {
@@ -397,7 +388,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             activePowerUpCoroutine = StartCoroutine(PowerUpCoroutine(powerUp));
         }
     }
-
     private IEnumerator PowerUpCoroutine(PowerUpItemDefinition powerUp)
     {
         if (powerUp.grantsInvincibility)
@@ -421,13 +411,11 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         activeSpeedMultiplier.Value = 1f;
         activePowerUpCoroutine = null;
     }
-
     public void ExecuteAttack()
     {
         if (!IsServer) return;
         networkAttackTrigger.Value = true;
     }
-
     [ServerRpc]
     private void DieServerRpc()
     {
@@ -437,14 +425,12 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         GetComponent<Collider>().enabled = false;
         if (soundController != null) soundController.PlayDeathSoundClientRpc();
     }
-
     [ServerRpc(RequireOwnership = false)]
     public void AddScoreServerRpc(int amount)
     {
         if (isDead.Value || amount == 0) return;
         score.Value += amount;
     }
-
     private void OnSpeedChanged(float oldSpeed, float newSpeed) => animator.SetFloat("Speed", newSpeed);
     private void OnIsGroundedChanged(bool oldIsGrounded, bool newIsGrounded)
     {
@@ -460,7 +446,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     {
         if (newAttackTrigger) animator.SetTrigger("Attack");
     }
-
     private void OnHealthChanged(float oldHealth, float newHealth)
     {
         if (IsOwner && healthBarSlider != null)
@@ -468,12 +453,10 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             healthBarSlider.value = newHealth;
         }
     }
-
     private void OnIsDamagedStateChanged(bool previousValue, bool newValue)
     {
         animator.SetBool("IsDamaged", newValue);
     }
-
     private void OnScoreChanged(int oldScore, int newScore)
     {
         if (IsOwner)
@@ -485,7 +468,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             scoreCountingCoroutine = StartCoroutine(CountScoreCoroutine(newScore));
         }
     }
-
     private IEnumerator CountScoreCoroutine(int targetScore)
     {
         float startScore = displayedScore;
@@ -504,8 +486,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         UpdateScoreText(targetScore);
         scoreCountingCoroutine = null;
     }
-
-
     private void UpdateScoreText(int scoreValue)
     {
         if (scoreText == null) return;
@@ -531,8 +511,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
 
         scoreText.text = builder.ToString();
     }
-
-
     private void OnIsDeadChanged(bool oldIsDead, bool newIsDead)
     {
         if (newIsDead && !oldIsDead)
@@ -575,18 +553,15 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
             isInventoryInputPressedLocal = false;
         }
     }
-
     public void AnimEvent_PlayFootstepSound()
     {
         soundController?.AnimEvent_PlayFootstepSound();
     }
-
     public void SaveData(ref GameData data)
     {
         data.playerPosition = transform.position;
         data.currentHealth = this.currentHealth.Value;
         data.score = this.score.Value;
-
         if (slots != null)
         {
             data.inventoryItems = new List<ItemDataSerializable>();
@@ -600,32 +575,44 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
                 });
             }
         }
+        if (IsOwner)
+        {
+            var virtualCamera = FindAnyObjectByType<CinemachineCamera>();
+            if (virtualCamera != null)
+            {
+                data.cameraPosition = virtualCamera.transform.position;
+            }
+        }
     }
-
     public void LoadData(GameData data)
     {
-        if (!IsServer) return;
-
-        if (TryGetComponent<CharacterController>(out var cc))
-        {
-            cc.enabled = false;
-            transform.position = data.playerPosition;
-            cc.enabled = true;
-        }
-        else
+        if (IsServer)
         {
             transform.position = data.playerPosition;
+
+            if (TryGetComponent<Rigidbody>(out var rb))
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
+            this.currentHealth.Value = data.currentHealth;
+            this.score.Value = data.score;
+
+            if (slots != null)
+            {
+                slots.LoadInventoryData(data.inventoryItems);
+            }
         }
-
-        this.currentHealth.Value = data.currentHealth;
-        this.score.Value = data.score;
-
-        if (slots != null)
+        if (IsOwner)
         {
-            slots.LoadInventoryData(data.inventoryItems);
+            var virtualCamera = FindAnyObjectByType<CinemachineCamera>();
+            if (virtualCamera != null)
+            {
+                virtualCamera.transform.position = data.cameraPosition;
+            }
         }
     }
-
     void OnDrawGizmos()
     {
         if (groundCheck != null)

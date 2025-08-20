@@ -1880,6 +1880,7 @@ MonoBehaviour:
   healthBarSlider: {fileID: 3006169310475650429}
   scoreText: {fileID: 8602231989201608071}
   scoreCountingDuration: 0.5
+  inGameMenuManager: {fileID: 0}
   inventoryUI: {fileID: 7814620244495120799}
   slots: {fileID: 2095044141270737859}
   isPlayerSpawned: 0

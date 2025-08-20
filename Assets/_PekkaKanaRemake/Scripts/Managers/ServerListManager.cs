@@ -16,7 +16,7 @@ public class ServerListManager : MonoBehaviour
 
     [Header("UI Referenciák")]
     [SerializeField] private GameObject serverButtonPrefab;
-    [SerializeField] private Transform serverListContent;
+    [SerializeField] public Transform serverListContent;
 
     // A MainMenuUIManager állítja be a UI-ból kapott érték alapján.
     [HideInInspector] public string ServerNameToHost { get; set; }
