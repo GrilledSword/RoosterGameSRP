@@ -20,5 +20,5 @@ MonoBehaviour:
   isStackable: 0
   maxStackSize: 1
   scoreValue: 12
-  pickupSound: {fileID: 0}
+  pickupSound: {fileID: 8300000, guid: 61b97af27d7269443a738e58c566de65, type: 3}
   useSound: {fileID: 0}

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53c4ed87025484244817c6f814f45310, type: 3}
+  m_Name: Kukorekolas1
+  m_EditorClassIdentifier: Assembly-CSharp::ConsumableItemDefinition
+  itemID: 105
+  itemName: Kukorekolas
+  itemDescription: 
+  itemIcon: {fileID: 21300000, guid: 011a68152d0ee7844bd1bafc4f7047f7, type: 3}
+  category: 1
+  isStackable: 0
+  maxStackSize: 99
+  scoreValue: 25
+  pickupSound: {fileID: 8300000, guid: c5e32999db32b3b42bf9d44796b2a669, type: 3}
+  useSound: {fileID: 8300000, guid: 230e001b8c9a75e40be30125113f03b4, type: 3}
+  healthRestored: 0
+  energyRestored: 0
+  effectDuration: 0
