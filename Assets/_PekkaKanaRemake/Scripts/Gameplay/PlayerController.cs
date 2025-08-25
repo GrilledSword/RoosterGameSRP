@@ -44,7 +44,7 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     [SerializeField] private float invincibilityDurationAfterDamage = 1.5f;
     private Coroutine damageInvincibilityCoroutine;
     private NetworkVariable<bool> isDamagedState = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-[SerializedField] private bool isAttackActive; //FOLYTATÁS INNEN
+    [SerializeField] private bool isAttackActive; //FOLYTATÁS INNEN
 
     [Header("Frakció Beállítás")]
     private Faction faction = Faction.Player;
