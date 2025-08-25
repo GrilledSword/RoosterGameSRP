@@ -22,17 +22,14 @@ public class DamageDealer : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        // JAVÍTÁS: Nem csak a nekiütközött objektumot, hanem annak szüleit is ellenőrizzük.
-        // Ez megoldja azt a problémát, ha a Collider egy gyerek-objektumon van.
+        
         IDamageable damageableTarget = other.GetComponentInParent<IDamageable>();
 
         if (damageableTarget != null)
         {
-            // Ellenőrizzük, hogy a célpont frakciója szerepel-e a sebezhető frakciók között.
             if ((targetFactions & damageableTarget.Faction) != 0)
             {
-                // Alkalmazzuk a sebzést.
-                damageableTarget.TakeDamage(damageAmount, sourceFaction);
+ damageableTarget.TakeDamage(damageAmount, sourceFaction);
 
                 // Ha az objektumnak el kell pusztulnia, despawnoljuk.
                 if (destroyOnImpact)
