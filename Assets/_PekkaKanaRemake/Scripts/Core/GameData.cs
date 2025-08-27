@@ -7,6 +7,8 @@ public class GameData
 {
     public Vector3 playerPosition;
     public float currentHealth;
+    public float currentMana;
+    public float currentStamina;
     public int score;
     public List<ItemDataSerializable> inventoryItems;
     public List<string> completedLevelIds;
