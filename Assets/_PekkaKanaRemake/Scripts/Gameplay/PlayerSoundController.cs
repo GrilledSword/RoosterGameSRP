@@ -10,7 +10,7 @@ public class PlayerSoundController : NetworkBehaviour
 {
     [Header("Komponens Referenciák")]
     [Tooltip("Az AudioSource, ami a hangokat lejátssza.")]
-    [SerializeField] private AudioSource audioSource;
+    [SerializeField] public AudioSource audioSource;
 
     [Header("Audio Mixer Beállítás")]
     [Tooltip("Az AudioMixer csoport, amihez ez a hangforrás tartozik (pl. 'SFX').")]

@@ -1,0 +1,3 @@
+11:18:06:919 [CRITICAL]	SharedConnection - Failed to open WinHTTP Session. A paraméter nem megfelelő.
+, last error code = 87 
+11:18:06:920 [ERROR]	Failed to Configure Secure Protocols. WinHTTP Incorrect Handle Type. last error code = 12018 

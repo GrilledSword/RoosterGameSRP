@@ -23,12 +23,18 @@ public class ItemDefinition : ScriptableObject
     [Header("Categorization & Stacking")]
     [Tooltip("A tárgy kategóriája, ami meghatározza, hova kerül az inventory-ban (vagy hogy bekerül-e egyáltalán).")]
     public ItemCategory category = ItemCategory.General;
-
     [Tooltip("Stackelhetõ-e a tárgy az inventory-ban?")]
     public bool isStackable = true;
-
     [Tooltip("A maximális mennyiség, amennyi egy slotban elfér ebbõl a tárgyból.")]
     public int maxStackSize = 99;
+
+    [Header("Weapon Properties")]
+    [Tooltip("A fegyver által kilõtt lövedék prefabja. Kell rajta lennie NetworkObject és Projectile szkriptnek.")]
+    public GameObject projectilePrefab;
+    [Tooltip("A lövés utáni várakozási idõ (cooldown) másodpercben.")]
+    public float shootDuration = 0.5f;
+    [Tooltip("Milyen messzire repül a lövedék, mielõtt eltûnik.")]
+    public float shootDistance = 10f;
 
     [Header("Gameplay Values")]
     [Tooltip("Mennyi pontot kap a játékos a tárgy felvételéért.")]

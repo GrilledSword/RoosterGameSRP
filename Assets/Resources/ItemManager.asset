@@ -13,11 +13,5 @@ MonoBehaviour:
   m_Name: ItemManager
   m_EditorClassIdentifier: 
   allItemDefinitions:
-  - {fileID: 11400000, guid: 4be15ffb71e352a45aaf82854476d765, type: 2}
-  - {fileID: 11400000, guid: 949b97efca152c14cacf64e07ce47b66, type: 2}
-  - {fileID: 11400000, guid: 36157911e73109e40bf438375ecbecd1, type: 2}
-  - {fileID: 11400000, guid: 45f3fdb1caedd164388490be692efc37, type: 2}
-  - {fileID: 11400000, guid: 3f0178e73bf394547bcfc8d65267d097, type: 2}
-  - {fileID: 11400000, guid: a9ddd112f70bfda4683047f8bfa21178, type: 2}
   - {fileID: 11400000, guid: 92eae8654963b2e428e918d848223880, type: 2}
   - {fileID: 11400000, guid: 9333388a42c65cc41ad728f2a9397587, type: 2}

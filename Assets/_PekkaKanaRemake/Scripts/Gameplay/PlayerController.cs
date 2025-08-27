@@ -5,6 +5,7 @@ using TMPro;
 using Unity.Cinemachine;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -44,7 +45,11 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     [SerializeField] private float invincibilityDurationAfterDamage = 1.5f;
     private Coroutine damageInvincibilityCoroutine;
     private NetworkVariable<bool> isDamagedState = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    [SerializeField] private bool isAttackActive; //FOLYTATÁS INNEN
+
+    [Header("Támadás Beállítások")]
+    [Tooltip("A pont, ahonnan a lövedékek indulnak (pl. a karakter szája).")]
+    [SerializeField] private Transform projectileSpawnPoint;
+    [SerializeField] private bool isAttackOnCooldown = false;
 
     [Header("Frakció Beállítás")]
     private Faction faction = Faction.Player;
@@ -201,8 +206,8 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     private void OnSprintCanceled(InputAction.CallbackContext ctx) => isRunningInputPressedLocal = false;
     private void OnInventoryPerformed(InputAction.CallbackContext ctx) => isInventoryInputPressedLocal = true;
     private void OnInventoryCanceled(InputAction.CallbackContext ctx) => isInventoryInputPressedLocal = false;
-    private void OnSlot1Performed(InputAction.CallbackContext ctx) => AttemptAttackServerRpc(0);
-    private void OnSlot2Performed(InputAction.CallbackContext ctx) => AttemptAttackServerRpc(1);
+    private void OnSlot1Performed(InputAction.CallbackContext ctx) => ShootServerRpc(0);
+    private void OnSlot2Performed(InputAction.CallbackContext ctx) => ShootServerRpc(1);
     private void OnSlot3Performed(InputAction.CallbackContext ctx) => slots.UseItemServerRpc(2);
     private void OnSlot4Performed(InputAction.CallbackContext ctx) => slots.UseItemServerRpc(3);
     private void OnSlot5Performed(InputAction.CallbackContext ctx) => slots.UseItemServerRpc(4);
@@ -330,11 +335,49 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         }
     }
     [ServerRpc]
-    private void AttemptAttackServerRpc(int slotIndex)
+    public void ShootServerRpc(int slotIndex)
     {
-        if (slots != null)
+        if (isAttackOnCooldown || isDead.Value || slots == null) return;
+
+        // A szerver lekéri a fegyver adatait a Slots komponenstől a kapott index alapján.
+        ItemData weaponData = slots.GetItemAt(slotIndex);
+        if (weaponData.isEmpty) return;
+
+        ItemDefinition weaponDef = ItemManager.Instance.GetItemDefinition(weaponData.itemID);
+        if (weaponDef == null || weaponDef.category != ItemCategory.Weapon || weaponDef.projectilePrefab == null)
         {
-            slots.TriggerAttackFromSlot(slotIndex);
+            return;
+        }
+
+        StartCoroutine(AttackCooldownCoroutine(weaponDef.shootDuration));
+
+        GameObject projectileInstance = Instantiate(weaponDef.projectilePrefab, projectileSpawnPoint.position, transform.rotation);
+        NetworkObject netObj = projectileInstance.GetComponent<NetworkObject>();
+        netObj.Spawn(true);
+
+        if (projectileInstance.TryGetComponent<Projectile>(out var projectile))
+        {
+            projectile.Initialize(weaponDef.shootDistance);
+        }
+
+        PlayAttackEffectsClientRpc(weaponData.itemID);
+    }
+    private IEnumerator AttackCooldownCoroutine(float duration)
+    {
+        isAttackOnCooldown = true;
+        yield return new WaitForSeconds(duration);
+        isAttackOnCooldown = false;
+    }
+
+    [ClientRpc]
+    private void PlayAttackEffectsClientRpc(int itemID)
+    {
+        animator.SetTrigger("Attack");
+
+        ItemDefinition itemDef = ItemManager.Instance.GetItemDefinition(itemID);
+        if (itemDef != null && itemDef.useSound != null)
+        {
+            soundController.audioSource.PlayOneShot(itemDef.useSound);
         }
     }
     public void TakeDamage(float damage, Faction sourceFaction)
@@ -411,11 +454,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         }
         activeSpeedMultiplier.Value = 1f;
         activePowerUpCoroutine = null;
-    }
-    public void ExecuteAttack()
-    {
-        if (!IsServer) return;
-        networkAttackTrigger.Value = true;
     }
     [ServerRpc]
     private void DieServerRpc()

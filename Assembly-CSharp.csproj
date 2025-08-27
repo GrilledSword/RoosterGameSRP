@@ -68,6 +68,7 @@
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\DiscoveryResponseData.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\NetworkManagerFIX.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Gameplay\PlayerController.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\Projectile.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\InGameMenuManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Managers\SaveManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\DiscoveryBroadcastData.cs" />

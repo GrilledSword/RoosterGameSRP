@@ -11,6 +11,7 @@ public class Slots : NetworkBehaviour
 
     private NetworkList<ItemData> inventoryItems;
     public static event Action OnInventoryUpdated;
+    private Transform _shootOrigin;
 
     void Awake()
     {
@@ -87,33 +88,14 @@ public class Slots : NetworkBehaviour
         }
         if (!itemAdded)
         {
+            Debug.LogWarning($"Inventory is full for category {itemDef.category}. Could not add {itemName}.");
         }
     }
 
     public void TriggerAttackFromSlot(int slotIndex)
     {
-        if (!IsServer) return;
-        if (slotIndex < 0 || slotIndex >= weaponSlotCount || inventoryItems[slotIndex].isEmpty) return;
-
-        ItemData itemToAttackWith = inventoryItems[slotIndex];
-        ItemDefinition itemDef = ItemManager.Instance.GetItemDefinition(itemToAttackWith.itemID);
-
-        if (itemDef != null && itemDef.category == ItemCategory.Weapon)
-        {
-            PekkaPlayerController playerController = GetComponent<PekkaPlayerController>();
-            if (playerController != null)
-            {
-                playerController.ExecuteAttack();
-
-                // JAVÍTVA: Hang lejátszása az új rendszeren keresztül
-                PlayerSoundController soundController = GetComponent<PlayerSoundController>();
-                if (soundController != null)
-                {
-                    // A 'false' jelzi, hogy ez egy használati (use) hang.
-                    soundController.PlayItemSoundClientRpc(itemToAttackWith.itemID, false);
-                }
-            }
-        }
+        // Ezt a metódust a PlayerController hívja, de a ShootServerRpc-ben már nincs rá szükség.
+        // A biztonság kedvéért itt hagyhatjuk, vagy törölhetjük.
     }
 
     [ServerRpc(RequireOwnership = true)]
@@ -143,7 +125,6 @@ public class Slots : NetworkBehaviour
 
         if (itemWasConsumed)
         {
-            // JAVÍTVA: Hang lejátszása az új rendszeren keresztül
             PlayerSoundController soundController = GetComponent<PlayerSoundController>();
             if (soundController != null)
             {
@@ -152,7 +133,6 @@ public class Slots : NetworkBehaviour
             RemoveItemServerRpc(slotIndex, 1);
         }
     }
-
     [ServerRpc(RequireOwnership = false)]
     public void RemoveItemServerRpc(int slotIndex, int quantityToRemove = 1)
     {
@@ -172,16 +152,33 @@ public class Slots : NetworkBehaviour
         }
     }
 
+    // --- EZ A HIÁNYZÓ METÓDUS ---
+    /// <summary>
+    /// Visszaadja a tárgy adatait egy adott slot indexről.
+    /// Csak a szerveren szabad meghívni.
+    /// </summary>
+    public ItemData GetItemAt(int slotIndex)
+    {
+        if (!IsServer)
+        {
+            Debug.LogWarning("GetItemAt should only be called on the server.");
+            return new ItemData { isEmpty = true };
+        }
+        if (slotIndex < 0 || slotIndex >= inventoryItems.Count)
+        {
+            return new ItemData { isEmpty = true };
+        }
+        return inventoryItems[slotIndex];
+    }
+
     public NetworkList<ItemData> GetInventoryItems()
     {
         return inventoryItems;
     }
-
     private void OnInventoryListChanged(NetworkListEvent<ItemData> changeEvent)
     {
         OnInventoryUpdated?.Invoke();
     }
-
     public void LoadInventoryData(List<ItemDataSerializable> itemsToLoad)
     {
         if (!IsServer) return;
@@ -209,5 +206,9 @@ public class Slots : NetworkBehaviour
                 inventoryItems[i] = new ItemData { isEmpty = true };
             }
         }
+    }
+    public void SetDependencies(Transform shootOrigin)
+    {
+        _shootOrigin = shootOrigin;
     }
 }
