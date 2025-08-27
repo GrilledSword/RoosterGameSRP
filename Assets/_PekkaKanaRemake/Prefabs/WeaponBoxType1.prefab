@@ -69,7 +69,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2686857681
+  GlobalObjectIdHash: 1295703342
   InScenePlacedSourceGlobalObjectIdHash: 1295703342
   DeferredDespawnTick: 0
   Ownership: 1
@@ -95,7 +95,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ItemPickup
   ShowTopMostFoldoutHeaderGroup: 1
-  itemID: 105
+  itemID: 11
   quantity: 1
 --- !u!114 &1375001197526037098
 MonoBehaviour:

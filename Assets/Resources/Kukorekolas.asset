@@ -9,19 +9,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 53c4ed87025484244817c6f814f45310, type: 3}
-  m_Name: Kukorekolas1
-  m_EditorClassIdentifier: Assembly-CSharp::ConsumableItemDefinition
-  itemID: 105
+  m_Script: {fileID: 11500000, guid: c2a3538cb271cec42889e713a7ae4088, type: 3}
+  m_Name: Kukorekolas
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponItemDefinition
+  itemID: 11
   itemName: Kukorekolas
   itemDescription: 
   itemIcon: {fileID: 21300000, guid: 011a68152d0ee7844bd1bafc4f7047f7, type: 3}
   category: 1
   isStackable: 0
   maxStackSize: 99
-  scoreValue: 25
+  scoreValue: 15
   pickupSound: {fileID: 8300000, guid: c5e32999db32b3b42bf9d44796b2a669, type: 3}
   useSound: {fileID: 8300000, guid: 230e001b8c9a75e40be30125113f03b4, type: 3}
-  healthRestored: 0
-  energyRestored: 0
-  effectDuration: 0
+  projectilePrefab: {fileID: 3041409106444736134, guid: 1c251d387872987439c1dfb7daaced89, type: 3}
+  shootDuration: 2
+  shootDistance: 10
+  manaCost: 5
+  staminaCost: 7

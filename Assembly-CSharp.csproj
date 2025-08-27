@@ -67,8 +67,8 @@
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Inventory\Slots.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\DiscoveryResponseData.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\NetworkManagerFIX.cs" />
-    <Compile Include="Assets\_PekkaKanaRemake\Scripts\Gameplay\PlayerController.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Projectile.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\ScriptableObjects\WeaponItemDefinition.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\InGameMenuManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Managers\SaveManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\DiscoveryBroadcastData.cs" />
@@ -101,6 +101,7 @@
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\ScriptableObjects\ConsumableItemDefinition.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\MainMenuUIManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Gameplay\DamageDealer.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\Gameplay\PekkaPlayerController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\_ThirdParty\TextMesh Pro\Shaders\TMPro.cginc" />
