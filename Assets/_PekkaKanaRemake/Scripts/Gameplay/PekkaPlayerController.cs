@@ -579,25 +579,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     #endregion
 
     #region Karakter Állapotok (Élet, Mana, Sebzés)
-    public void TakeDamage(float damage, Faction sourceFaction)
-    {
-        if (IsServer)
-        {
-            if (isDead.Value || isInvincible.Value) return;
-
-            currentHealth.Value -= damage;
-            if (components.soundController != null) components.soundController.PlayDamageSoundClientRpc();
-
-            if (damageInvincibilityCoroutine != null) StopCoroutine(damageInvincibilityCoroutine);
-            damageInvincibilityCoroutine = StartCoroutine(DamageInvincibilityCoroutine());
-
-            if (currentHealth.Value <= 0)
-            {
-                currentHealth.Value = 0;
-                DieServerRpc();
-            }
-        }
-    }
     [ServerRpc(RequireOwnership = false)]
     public void HealServerRpc(float amount)
     {
@@ -642,6 +623,61 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     {
         if (isDead.Value || amount == 0) return;
         score.Value += amount;
+    }
+    [ClientRpc]
+    public void TeleportPlayerClientRpc(Vector3 position)
+    {
+        // A Rigidbody teleportálásához a pozícióját és a sebességét is állítani kell.
+        if (components.rb != null)
+        {
+            components.rb.position = position;
+            components.rb.linearVelocity = Vector3.zero;
+        }
+        else
+        {
+            // Fallback, ha valamiért nincs Rigidbody
+            transform.position = position;
+        }
+    }
+    public void Respawn()
+    {
+        if (!IsServer) return;
+
+        // Get spawn position
+        Vector3 spawnPosition = Vector3.zero;
+        SpawnManager spawnManager = FindFirstObjectByType<SpawnManager>();
+        if (spawnManager != null)
+        {
+            spawnPosition = spawnManager.GetNextSpawnPoint().position;
+        }
+        else
+        {
+            Debug.LogWarning("No SpawnManager found in scene, respawning at (0,0,0).");
+        }
+
+        // Reset health and call the RPC with the new position
+        currentHealth.Value = stats.maximumHealth;
+        isDead.Value = false;
+        TeleportPlayerClientRpc(spawnPosition); // Újrahasznosítjuk a teleport RPC-t
+    }
+    public void TakeDamage(float damage, Faction sourceFaction)
+    {
+        if (IsServer)
+        {
+            if (isDead.Value || isInvincible.Value) return;
+
+            currentHealth.Value -= damage;
+            if (components.soundController != null) components.soundController.PlayDamageSoundClientRpc();
+
+            if (damageInvincibilityCoroutine != null) StopCoroutine(damageInvincibilityCoroutine);
+            damageInvincibilityCoroutine = StartCoroutine(DamageInvincibilityCoroutine());
+
+            if (currentHealth.Value <= 0)
+            {
+                currentHealth.Value = 0;
+                DieServerRpc();
+            }
+        }
     }
     #endregion
 

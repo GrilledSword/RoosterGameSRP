@@ -16,7 +16,7 @@ public class GameFlowManager : NetworkBehaviour
     [SerializeField] private GameObject loadingScreenPanel;
     public bool IsMultiplayerSession { get; private set; } = false;
 
-    public LevelNodeDefinition SelectedLevel { get; private set; }
+    private LevelNodeDefinition _selectedLevel;
 
     void Awake()
     {
@@ -37,28 +37,14 @@ public class GameFlowManager : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
-        if (NetworkManager.Singleton != null)
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
         {
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoadCompleted;
         }
     }
 
-    public void SetSelectedLevel(LevelNodeDefinition level)
-    {
-        SelectedLevel = level;
-    }
-
     private void OnSceneLoadCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        if (SelectedLevel != null && sceneName == SelectedLevel.levelSceneName)
-        {
-            LevelManager levelManager = FindFirstObjectByType<LevelManager>();
-            if (levelManager != null)
-            {
-                levelManager.InitializeLevel(SelectedLevel);
-            }
-        }
-
         if (NetworkManager.Singleton.LocalClient.PlayerObject != null)
         {
             PekkaPlayerController localPlayer = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PekkaPlayerController>();
@@ -69,18 +55,66 @@ public class GameFlowManager : NetworkBehaviour
         }
         ShowLoadingScreen(true);
         if (!IsServer) return;
+
+        // Check if all connected clients have finished loading the scene
         foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
         {
             if (!clientsCompleted.Contains(clientId))
             {
+                // A client hasn't loaded yet, wait for the next callback
                 return;
             }
         }
+
+        // Initialize level specific managers like LevelManager
+        LevelManager levelManager = FindFirstObjectByType<LevelManager>();
+        if (levelManager != null && _selectedLevel != null)
+        {
+            levelManager.InitializeLevel(_selectedLevel);
+        }
+
+        // Position players at spawn points
+        PositionPlayersAtSpawnPoints();
+
+        // All clients have loaded, start the game
         StartGameClientRpc();
     }
+
+    /// <summary>
+    /// Server-side method to find spawn points and move players to them.
+    /// </summary>
+    private void PositionPlayersAtSpawnPoints()
+    {
+        if (!IsServer) return;
+
+        var spawnManager = FindFirstObjectByType<SpawnManager>();
+        if (spawnManager != null)
+        {
+            foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
+            {
+                NetworkObject playerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
+                if (playerObject != null)
+                {
+                    Transform spawnPoint = spawnManager.GetNextSpawnPoint();
+                    var playerController = playerObject.GetComponent<PekkaPlayerController>();
+                    if (playerController != null)
+                    {
+                        playerController.TeleportPlayerClientRpc(spawnPoint.position);
+                    }
+                }
+            }
+        }
+        else
+        {
+            Debug.LogWarning("SpawnManager not found in the current scene. Players will not be moved to spawn points.");
+        }
+    }
+
+
     [ClientRpc]
     private void StartGameClientRpc()
     {
+        // This is now called after players are positioned
         if (NetworkManager.Singleton.LocalClient.PlayerObject != null)
         {
             PekkaPlayerController localPlayer = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PekkaPlayerController>();
@@ -91,6 +125,17 @@ public class GameFlowManager : NetworkBehaviour
         }
         ShowLoadingScreen(false);
     }
+
+    public void SetSelectedLevel(LevelNodeDefinition level)
+    {
+        _selectedLevel = level;
+    }
+
+    public LevelNodeDefinition GetSelectedLevel()
+    {
+        return _selectedLevel;
+    }
+
 
     private void ShowLoadingScreen(bool show)
     {
@@ -124,12 +169,14 @@ public class GameFlowManager : NetworkBehaviour
 
     public void ReturnToWorldMap()
     {
+        if (!IsServer) return;
         WorldDefinition currentWorld = GetCurrentWorldDefinition();
-        if (currentWorld != null && IsServer)
+        if (currentWorld != null)
         {
             NetworkManager.Singleton.SceneManager.LoadScene(currentWorld.worldMapSceneName, LoadSceneMode.Single);
         }
     }
+
 
     [ServerRpc(RequireOwnership = true)]
     public void ApplyLoadedProgressServerRpc(FixedString32Bytes[] completedIds)
@@ -161,7 +208,7 @@ public class GameFlowManager : NetworkBehaviour
         }
     }
 
-    [ServerRpc(RequireOwnership = true)]
+    [ServerRpc]
     public void CompleteLevelServerRpc(string levelId)
     {
         var fixedLevelId = new FixedString32Bytes(levelId);

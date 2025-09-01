@@ -87,6 +87,7 @@
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\WorldButtonUI.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\WorldMapManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\LoadGameUIManager.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\SpawnManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\ServerButtonUI.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\AnimatedText.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\UniqueId.cs" />
@@ -99,12 +100,13 @@
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\UI\InventoryUIManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\LevelNodeDefinition.cs" />
     <Compile Include="Assets\PlayerControls.cs" />
-    <Compile Include="Assets\_PekkaKanaRemake\Scripts\LanDiscoveryManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Managers\LevelManager.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\LanDiscoveryManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\ScriptableObjects\ConsumableItemDefinition.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\MainMenuUIManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Gameplay\DamageDealer.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Gameplay\PekkaPlayerController.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\SpawnPoint.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Goal.cs" />
   </ItemGroup>
   <ItemGroup>
