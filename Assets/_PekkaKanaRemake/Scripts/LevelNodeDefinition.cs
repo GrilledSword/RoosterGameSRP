@@ -1,9 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// Egyetlen pályacsomópontot definiál a világtérképen.
-/// </summary>
 [CreateAssetMenu(fileName = "NewLevelNode", menuName = "PekkaKana3/Level Node Definition")]
 public class LevelNodeDefinition : ScriptableObject
 {
@@ -16,6 +13,13 @@ public class LevelNodeDefinition : ScriptableObject
 
     [Tooltip("A tényleges játékmenetet tartalmazó jelenet neve.")]
     public string levelSceneName;
+
+    [Header("Time Limit")]
+    [Tooltip("Does this level have a time limit?")]
+    public bool hasTimeLimit = false;
+
+    [Tooltip("The time limit for the level in seconds. Only effective if 'hasTimeLimit' is checked.")]
+    public float timeLimitInSeconds = 120f;
 
     [Header("Térkép és Haladás")]
     [Tooltip("Alapból fel van-e oldva ez a pálya?")]

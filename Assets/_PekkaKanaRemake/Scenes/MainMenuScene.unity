@@ -1255,14 +1255,6 @@ PrefabInstance:
       propertyPath: serverNameInputField
       value: 
       objectReference: {fileID: 227650645}
-    - target: {fileID: 6480163239430103293, guid: 2d97a72a28297c247a8af52ad54785b0, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7440753609223204486, guid: 2d97a72a28297c247a8af52ad54785b0, type: 3}
-      propertyPath: loadingScreenPanel
-      value: 
-      objectReference: {fileID: 7867784375288533667}
     - target: {fileID: 7492297030455877322, guid: 2d97a72a28297c247a8af52ad54785b0, type: 3}
       propertyPath: networkManager
       value: 
@@ -1291,11 +1283,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75c2e7527733ed24cbc933349bb8cf78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &7867784375288533667 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6480163239430103293, guid: 2d97a72a28297c247a8af52ad54785b0, type: 3}
-  m_PrefabInstance: {fileID: 7867784375288533665}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &8534704378174492940
 GameObject:
   m_ObjectHideFlags: 0

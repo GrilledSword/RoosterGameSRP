@@ -15,6 +15,7 @@ public class LevelButtonUI : MonoBehaviour
     {
         this.levelData = node;
         this.gameFlowManager = flowManager;
+        this.levelNameText.text = levelData.levelName;
 
         if (levelNameText != null)
         {
@@ -41,6 +42,7 @@ public class LevelButtonUI : MonoBehaviour
         if (Unity.Netcode.NetworkManager.Singleton.IsHost)
         {
             gameFlowManager.StartLevelServerRpc(levelData.levelSceneName);
+            GameFlowManager.Instance.SetSelectedLevel(levelData);
         }
     }
 }

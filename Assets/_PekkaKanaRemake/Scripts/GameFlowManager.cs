@@ -16,6 +16,8 @@ public class GameFlowManager : NetworkBehaviour
     [SerializeField] private GameObject loadingScreenPanel;
     public bool IsMultiplayerSession { get; private set; } = false;
 
+    public LevelNodeDefinition SelectedLevel { get; private set; }
+
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -32,8 +34,31 @@ public class GameFlowManager : NetworkBehaviour
     {
         NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoadCompleted;
     }
+
+    public override void OnNetworkDespawn()
+    {
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoadCompleted;
+        }
+    }
+
+    public void SetSelectedLevel(LevelNodeDefinition level)
+    {
+        SelectedLevel = level;
+    }
+
     private void OnSceneLoadCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
+        if (SelectedLevel != null && sceneName == SelectedLevel.levelSceneName)
+        {
+            LevelManager levelManager = FindFirstObjectByType<LevelManager>();
+            if (levelManager != null)
+            {
+                levelManager.InitializeLevel(SelectedLevel);
+            }
+        }
+
         if (NetworkManager.Singleton.LocalClient.PlayerObject != null)
         {
             PekkaPlayerController localPlayer = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PekkaPlayerController>();
@@ -97,6 +122,15 @@ public class GameFlowManager : NetworkBehaviour
         return allWorlds.FirstOrDefault(world => world.worldId == currentWorldId.Value.ToString());
     }
 
+    public void ReturnToWorldMap()
+    {
+        WorldDefinition currentWorld = GetCurrentWorldDefinition();
+        if (currentWorld != null && IsServer)
+        {
+            NetworkManager.Singleton.SceneManager.LoadScene(currentWorld.worldMapSceneName, LoadSceneMode.Single);
+        }
+    }
+
     [ServerRpc(RequireOwnership = true)]
     public void ApplyLoadedProgressServerRpc(FixedString32Bytes[] completedIds)
     {
@@ -135,11 +169,6 @@ public class GameFlowManager : NetworkBehaviour
         {
             CompletedLevelIds.Add(fixedLevelId);
         }
-        WorldDefinition currentWorld = GetCurrentWorldDefinition();
-        if (currentWorld != null)
-        {
-            NetworkManager.Singleton.SceneManager.LoadScene(currentWorld.worldMapSceneName, LoadSceneMode.Single);
-        }
     }
 
     public void StartSingleplayerGame(string sceneName)
@@ -166,3 +195,4 @@ public class GameFlowManager : NetworkBehaviour
         }
     }
 }
+

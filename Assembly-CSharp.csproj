@@ -79,6 +79,7 @@
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\LevelButtonUI.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Utilities\CombineMesh.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Managers\SettingsManager.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\LevelSummaryUI.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Inventory\ItemPickup.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Core\ISaveable.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\WorldDefinition.cs" />
@@ -87,6 +88,7 @@
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\WorldMapManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\LoadGameUIManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\ServerButtonUI.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\AnimatedText.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\UniqueId.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\GameFlowManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Managers\ItemManager.cs" />
@@ -98,10 +100,12 @@
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\LevelNodeDefinition.cs" />
     <Compile Include="Assets\PlayerControls.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\LanDiscoveryManager.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\Managers\LevelManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\ScriptableObjects\ConsumableItemDefinition.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\MainMenuUIManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Gameplay\DamageDealer.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Gameplay\PekkaPlayerController.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\Goal.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\_ThirdParty\TextMesh Pro\Shaders\TMPro.cginc" />

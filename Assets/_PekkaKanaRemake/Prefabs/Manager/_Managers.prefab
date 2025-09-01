@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 8238983543314161970}
   - component: {fileID: 2339289935216149988}
   - component: {fileID: 7020206841360394733}
+  - component: {fileID: 4490692876537488455}
   m_Layer: 0
   m_Name: _Managers
   m_TagString: Untagged
@@ -78,7 +79,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  loadingScreenPanel: {fileID: 2973918894407037316}
+  loadingScreenPanel: {fileID: 6480163239430103293}
 --- !u!114 &7492297030455877322
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -174,6 +175,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   inGameMenuPrefab: {fileID: 7122100247793096042, guid: 30ff48921ed75a148a138f7234217a21, type: 3}
   _currentMenuInstance: {fileID: 0}
+--- !u!114 &4490692876537488455
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 421219700653306331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21b8158a239895841aba0ed83526f3b3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LevelManager
+  timerText: {fileID: 0}
 --- !u!1 &2909173793802195016
 GameObject:
   m_ObjectHideFlags: 0
@@ -404,7 +418,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3695698343286512579
 RectTransform:
   m_ObjectHideFlags: 0

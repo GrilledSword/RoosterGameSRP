@@ -15,7 +15,10 @@ MonoBehaviour:
   levelId: 115
   levelName: test
   levelSceneName: Level_1_1_Scene
+  hasTimeLimit: 1
+  timeLimitInSeconds: 120
   unlockedByDefault: 1
   positionX: 0.074
   positionY: 0.069
-  unlocksNodes: []
+  unlocksNodes:
+  - {fileID: 11400000, guid: b9409519e8a6e28449bc1ed582a27db5, type: 2}

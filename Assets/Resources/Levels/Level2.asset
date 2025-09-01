@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelId: 13
   levelName: test1
-  levelSceneName: Level_1_1_Scene
+  levelSceneName: Level_1_2_Scene
+  hasTimeLimit: 0
+  timeLimitInSeconds: 120
   unlockedByDefault: 0
   positionX: 0.115
   positionY: 0.115
-  unlocksNodes:
-  - {fileID: 11400000, guid: fafac56f6dbcace4796bef7736ca3567, type: 2}
+  unlocksNodes: []

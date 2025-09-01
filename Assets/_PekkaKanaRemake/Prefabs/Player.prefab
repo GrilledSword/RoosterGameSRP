@@ -2370,7 +2370,7 @@ GameObject:
   - component: {fileID: 6261825230355725540}
   - component: {fileID: 6792652396877344771}
   m_Layer: 0
-  m_Name: TimeClockText
+  m_Name: InGameClock
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
