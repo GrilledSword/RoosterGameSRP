@@ -34,7 +34,6 @@ public class GameFlowManager : NetworkBehaviour
     {
         NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoadCompleted;
     }
-
     public override void OnNetworkDespawn()
     {
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
@@ -42,7 +41,6 @@ public class GameFlowManager : NetworkBehaviour
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoadCompleted;
         }
     }
-
     private void OnSceneLoadCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
         if (NetworkManager.Singleton.LocalClient.PlayerObject != null)
@@ -56,33 +54,27 @@ public class GameFlowManager : NetworkBehaviour
         ShowLoadingScreen(true);
         if (!IsServer) return;
 
-        // Check if all connected clients have finished loading the scene
         foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
         {
             if (!clientsCompleted.Contains(clientId))
             {
-                // A client hasn't loaded yet, wait for the next callback
                 return;
             }
         }
 
-        // Initialize level specific managers like LevelManager
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.Instance.ResetLevelProgress();
+        }
+
         LevelManager levelManager = FindFirstObjectByType<LevelManager>();
         if (levelManager != null && _selectedLevel != null)
         {
             levelManager.InitializeLevel(_selectedLevel);
         }
-
-        // Position players at spawn points
         PositionPlayersAtSpawnPoints();
-
-        // All clients have loaded, start the game
         StartGameClientRpc();
     }
-
-    /// <summary>
-    /// Server-side method to find spawn points and move players to them.
-    /// </summary>
     private void PositionPlayersAtSpawnPoints()
     {
         if (!IsServer) return;
@@ -109,12 +101,9 @@ public class GameFlowManager : NetworkBehaviour
             Debug.LogWarning("SpawnManager not found in the current scene. Players will not be moved to spawn points.");
         }
     }
-
-
     [ClientRpc]
     private void StartGameClientRpc()
     {
-        // This is now called after players are positioned
         if (NetworkManager.Singleton.LocalClient.PlayerObject != null)
         {
             PekkaPlayerController localPlayer = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PekkaPlayerController>();
@@ -125,18 +114,14 @@ public class GameFlowManager : NetworkBehaviour
         }
         ShowLoadingScreen(false);
     }
-
     public void SetSelectedLevel(LevelNodeDefinition level)
     {
         _selectedLevel = level;
     }
-
     public LevelNodeDefinition GetSelectedLevel()
     {
         return _selectedLevel;
     }
-
-
     private void ShowLoadingScreen(bool show)
     {
         if (loadingScreenPanel == null)
@@ -153,20 +138,16 @@ public class GameFlowManager : NetworkBehaviour
             Debug.LogError("LoadingScreenPanel not found in the scene!");
         }
     }
-
     private void LoadAllWorldDefinitions()
     {
         allWorlds = new List<WorldDefinition>(Resources.LoadAll<WorldDefinition>("Worlds"));
     }
-
     public List<WorldDefinition> GetAllWorlds() => allWorlds;
-
     public WorldDefinition GetCurrentWorldDefinition()
     {
         if (string.IsNullOrEmpty(currentWorldId.Value.ToString())) return null;
         return allWorlds.FirstOrDefault(world => world.worldId == currentWorldId.Value.ToString());
     }
-
     public void ReturnToWorldMap()
     {
         if (!IsServer) return;
@@ -176,8 +157,6 @@ public class GameFlowManager : NetworkBehaviour
             NetworkManager.Singleton.SceneManager.LoadScene(currentWorld.worldMapSceneName, LoadSceneMode.Single);
         }
     }
-
-
     [ServerRpc(RequireOwnership = true)]
     public void ApplyLoadedProgressServerRpc(FixedString32Bytes[] completedIds)
     {
@@ -187,7 +166,6 @@ public class GameFlowManager : NetworkBehaviour
             CompletedLevelIds.Add(id);
         }
     }
-
     [ServerRpc(RequireOwnership = true)]
     public void SelectWorldServerRpc(string worldId)
     {
@@ -198,7 +176,6 @@ public class GameFlowManager : NetworkBehaviour
             NetworkManager.Singleton.SceneManager.LoadScene(worldToLoad.worldMapSceneName, LoadSceneMode.Single);
         }
     }
-
     [ServerRpc(RequireOwnership = true)]
     public void StartLevelServerRpc(string levelSceneName)
     {
@@ -207,7 +184,6 @@ public class GameFlowManager : NetworkBehaviour
             NetworkManager.Singleton.SceneManager.LoadScene(levelSceneName, LoadSceneMode.Single);
         }
     }
-
     [ServerRpc]
     public void CompleteLevelServerRpc(string levelId)
     {
@@ -217,7 +193,6 @@ public class GameFlowManager : NetworkBehaviour
             CompletedLevelIds.Add(fixedLevelId);
         }
     }
-
     public void StartSingleplayerGame(string sceneName)
     {
         IsMultiplayerSession = false;

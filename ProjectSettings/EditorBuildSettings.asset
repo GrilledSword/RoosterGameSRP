@@ -6,13 +6,13 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/MainMenuScene.unity
+    path: Assets/_PekkaKanaRemake/Scenes/MainMenuScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
-    path: Assets/Scenes/World1_MapScene.unity
+    path: Assets/_PekkaKanaRemake/Scenes/World1_MapScene.unity
     guid: a7b76a7adae7ad847b6b35717f1b5dd9
   - enabled: 1
-    path: Assets/Scenes/Level_1_1_Scene.unity
+    path: Assets/_PekkaKanaRemake/Scenes/Level_1_1_Scene.unity
     guid: 59bf7ff832247a144a4209752c9c9030
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
