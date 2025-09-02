@@ -1,23 +1,26 @@
-using System;
+﻿using System;
 using System.Collections;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 
+/// <summary>
+/// Manages the state and rules for a specific level, including the timer and the level completion sequence.
+/// It's initialized by the GameFlowManager after the level scene is loaded.
+/// </summary>
 public class LevelManager : NetworkBehaviour
 {
     [Header("Level Configuration")]
     private LevelNodeDefinition currentLevel;
 
     [Header("UI References")]
-    [SerializeField] private GameObject goalTextObject;
-    private const string goalTextObjectName = "InGoalContainer";
+    [SerializeField] private GameObject goalTextObject; // Húzd ide a "CÉL!" feliratot tartalmazó GameObject-et
     private TextMeshProUGUI timerText;
     private const string TimerObjectName = "InGameClock";
     private LevelSummaryUI levelSummaryUI;
 
     [Header("Settings")]
-    [SerializeField] private float goalTextDisplayTime = 2.0f;
+    [SerializeField] private float goalTextDisplayTime = 2.0f; // Mennyi ideig látszódjon a "CÉL!" felirat
 
     private float _remainingTime;
     private bool _isTimerRunning = false;
@@ -36,9 +39,9 @@ public class LevelManager : NetworkBehaviour
 
         this.enabled = true;
 
-        FindMissingTexts();
+        FindTimerText();
         levelSummaryUI = FindFirstObjectByType<LevelSummaryUI>();
-        if (goalTextObject != null) goalTextObject.SetActive(false);
+        if (goalTextObject != null) goalTextObject.SetActive(false); // Kezdetben a CÉL szöveg rejtve van
 
         if (currentLevel.hasTimeLimit)
         {
@@ -52,6 +55,7 @@ public class LevelManager : NetworkBehaviour
             if (timerText != null) timerText.gameObject.SetActive(false);
         }
     }
+
     void Update()
     {
         if (!_isTimerRunning || _levelCompleted) return;
@@ -69,6 +73,11 @@ public class LevelManager : NetworkBehaviour
             KillPlayer();
         }
     }
+
+    /// <summary>
+    /// This method starts the multi-stage level completion sequence.
+    /// Called by the PlayerController on the server.
+    /// </summary>
     public void StartLevelEndSequence()
     {
         if (_levelCompleted || !IsServer) return;
@@ -77,14 +86,11 @@ public class LevelManager : NetworkBehaviour
 
         GameFlowManager.Instance.CompleteLevelServerRpc(currentLevel.levelId);
 
-        if (SaveManager.Instance != null)
-        {
-            SaveManager.Instance.CommitLevelProgress();
-        }
-
+        // Először a "CÉL!" feliratot mutatjuk, majd egy kis késleltetés után az összesítőt.
         ShowGoalTextClientRpc();
         StartCoroutine(ShowSummaryAfterDelay());
     }
+
     [ClientRpc]
     private void ShowGoalTextClientRpc()
     {
@@ -93,24 +99,30 @@ public class LevelManager : NetworkBehaviour
             goalTextObject.SetActive(true);
         }
 
+        // Letiltjuk a játékos irányítását, hogy ne mozoghasson a befejezés alatt
         PekkaPlayerController localPlayer = FindFirstObjectByType<PekkaPlayerController>();
         if (localPlayer != null && localPlayer.IsOwner)
         {
             localPlayer.SetPlayerControlActive(false);
         }
     }
+
     private IEnumerator ShowSummaryAfterDelay()
     {
         yield return new WaitForSeconds(goalTextDisplayTime);
         ShowSummaryClientRpc();
     }
+
     [ClientRpc]
     private void ShowSummaryClientRpc()
     {
+        // Elrejtjük a "CÉL!" feliratot
         if (goalTextObject != null)
         {
             goalTextObject.SetActive(false);
         }
+
+        // Megjelenítjük a pontszám összesítőt
         PekkaPlayerController localPlayer = FindFirstObjectByType<PekkaPlayerController>();
         if (localPlayer != null && levelSummaryUI != null)
         {
@@ -120,13 +132,15 @@ public class LevelManager : NetworkBehaviour
         }
         else
         {
+            // Fallback, ha nincs UI
             if (GameFlowManager.Instance != null && NetworkManager.Singleton.IsServer)
             {
                 GameFlowManager.Instance.ReturnToWorldMap();
             }
         }
     }
-    private void FindMissingTexts()
+
+    private void FindTimerText()
     {
         if (timerText != null) return;
 
@@ -135,15 +149,8 @@ public class LevelManager : NetworkBehaviour
         {
             timerText = clockObject.GetComponent<TextMeshProUGUI>();
         }
-
-        if(goalTextObject != null) return;
-        GameObject goalObject = GameObject.Find(goalTextObjectName);
-        if (goalObject != null)
-        {
-            goalTextObject = goalObject;
-            goalTextObject.SetActive(false);
-        }
     }
+
     void UpdateTimerUI(float timeToDisplay)
     {
         if (timerText == null) return;
@@ -155,6 +162,7 @@ public class LevelManager : NetworkBehaviour
 
         timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
     }
+
     private void KillPlayer()
     {
         if (!IsServer) return;

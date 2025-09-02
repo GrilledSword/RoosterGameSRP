@@ -55,13 +55,5 @@ public class InGameMenuManager : MonoBehaviour
         if (_currentMenuInstance == null) return;
         _currentMenuInstance.Toggle();
         GameIsPaused = _currentMenuInstance.IsMenuOpen();
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost)
-        {
-            bool isSinglePlayer = NetworkManager.Singleton.ConnectedClientsList.Count == 1;
-            if (isSinglePlayer)
-            {
-                Time.timeScale = GameIsPaused ? 0f : 1f;
-            }
-        }
     }
 }

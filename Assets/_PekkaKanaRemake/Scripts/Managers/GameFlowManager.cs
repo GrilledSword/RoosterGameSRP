@@ -1,10 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using Unity.Collections;
-using Unity.Netcode;
 using UnityEngine;
+using Unity.Netcode;
+using System.Collections.Generic;
 using UnityEngine.SceneManagement;
+using Unity.Collections;
+using System.Linq;
 
 public class GameFlowManager : NetworkBehaviour
 {
@@ -16,8 +15,7 @@ public class GameFlowManager : NetworkBehaviour
     private List<WorldDefinition> allWorlds;
     [SerializeField] private GameObject loadingScreenPanel;
     public bool IsMultiplayerSession { get; private set; } = false;
-    private bool _isLoadingFromSave = false;
-    private LevelNodeDefinition _selectedLevel;
+    public static LevelNodeDefinition SelectedLevel { get; private set; }
 
     void Awake()
     {
@@ -31,11 +29,11 @@ public class GameFlowManager : NetworkBehaviour
 
         LoadAllWorldDefinitions();
     }
-
     public override void OnNetworkSpawn()
     {
         NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoadCompleted;
     }
+
     public override void OnNetworkDespawn()
     {
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
@@ -43,67 +41,45 @@ public class GameFlowManager : NetworkBehaviour
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoadCompleted;
         }
     }
+
     private void OnSceneLoadCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
+        ShowLoadingScreen(true);
         if (!IsServer) return;
-        if (_isLoadingFromSave && SaveManager.Instance?.CurrentlyLoadedData != null)
+
+        // Megvárjuk, amíg minden kliens betölti a jelenetet
+        foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
         {
-            var saveData = SaveManager.Instance.CurrentlyLoadedData;
-            var saveableEntities = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).OfType<ISaveable>();
-            foreach (ISaveable entity in saveableEntities)
+            if (!clientsCompleted.Contains(clientId))
             {
-                entity.LoadData(saveData);
+                // Még nem mindenki végzett, várunk a következõ callback-re
+                return;
             }
+        }
+
+        // Ha ide eljutottunk, mindenki betöltötte a pályát.
+        // Most spawnoljuk a játékosokat a megfelelõ helyekre.
+        if (SpawnManager.Instance != null && sceneName != "MainMenuScene" && sceneName != "World1_MapScene")
+        {
             foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
             {
                 NetworkObject playerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
-                if (playerObject != null && saveData.playersData.TryGetValue(clientId.ToString(), out PlayerData playerData))
+                if (playerObject != null && playerObject.TryGetComponent<PekkaPlayerController>(out var playerController))
                 {
-                    var playerController = playerObject.GetComponent<PekkaPlayerController>();
-                    if (playerController != null)
-                    {
-                        playerController.TeleportPlayerClientRpc(playerData.position);
-                    }
+                    Transform spawnPoint = SpawnManager.Instance.GetNextSpawnPoint();
+                    playerController.TeleportPlayerClientRpc(spawnPoint.position);
                 }
             }
+        }
 
-            _isLoadingFromSave = false;
-        }
-        else
-        {
-            PositionPlayersAtSpawnPoints();
-        }
+        // Miután minden játékos a helyén van, elindítjuk a játékot
         StartGameClientRpc();
     }
-    private void PositionPlayersAtSpawnPoints()
-    {
-        if (!IsServer) return;
 
-        var spawnManager = FindFirstObjectByType<SpawnManager>();
-        if (spawnManager != null)
-        {
-            foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
-            {
-                NetworkObject playerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
-                if (playerObject != null)
-                {
-                    Transform spawnPoint = spawnManager.GetNextSpawnPoint();
-                    var playerController = playerObject.GetComponent<PekkaPlayerController>();
-                    if (playerController != null)
-                    {
-                        playerController.TeleportPlayerClientRpc(spawnPoint.position);
-                    }
-                }
-            }
-        }
-        else
-        {
-            Debug.LogWarning("SpawnManager not found in the current scene. Players will not be moved to spawn points.");
-        }
-    }
     [ClientRpc]
     private void StartGameClientRpc()
     {
+        // Itt már csak a UI-t és a vezérlést kezeljük, a teleportálás korábban megtörtént
         if (NetworkManager.Singleton.LocalClient.PlayerObject != null)
         {
             PekkaPlayerController localPlayer = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PekkaPlayerController>();
@@ -114,25 +90,17 @@ public class GameFlowManager : NetworkBehaviour
         }
         ShowLoadingScreen(false);
     }
-    public void StartGameFromLoad(string sceneName)
+    public void SetSelectedLevel(LevelNodeDefinition levelData)
     {
-        _isLoadingFromSave = true;
-        NetworkManager.Singleton.StartHost();
-        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+        SelectedLevel = levelData;
     }
-    public void SetSelectedLevel(LevelNodeDefinition level)
-    {
-        _selectedLevel = level;
-    }
-    public LevelNodeDefinition GetSelectedLevel()
-    {
-        return _selectedLevel;
-    }
+
     private void ShowLoadingScreen(bool show)
     {
         if (loadingScreenPanel == null)
         {
-            loadingScreenPanel = GameObject.Find("LoadingScreenPanel");
+            // Robusztusabb keresés, ha a panel esetleg inaktív
+            loadingScreenPanel = Resources.FindObjectsOfTypeAll<GameObject>().FirstOrDefault(g => g.name == "LoadingScreenPanel");
         }
 
         if (loadingScreenPanel != null)
@@ -141,28 +109,23 @@ public class GameFlowManager : NetworkBehaviour
         }
         else if (show)
         {
-            Debug.LogError("LoadingScreenPanel not found in the scene!");
+            Debug.LogError("LoadingScreenPanel not found in the project!");
         }
     }
+
     private void LoadAllWorldDefinitions()
     {
         allWorlds = new List<WorldDefinition>(Resources.LoadAll<WorldDefinition>("Worlds"));
     }
+
     public List<WorldDefinition> GetAllWorlds() => allWorlds;
+
     public WorldDefinition GetCurrentWorldDefinition()
     {
         if (string.IsNullOrEmpty(currentWorldId.Value.ToString())) return null;
         return allWorlds.FirstOrDefault(world => world.worldId == currentWorldId.Value.ToString());
     }
-    public void ReturnToWorldMap()
-    {
-        if (!IsServer) return;
-        WorldDefinition currentWorld = GetCurrentWorldDefinition();
-        if (currentWorld != null)
-        {
-            NetworkManager.Singleton.SceneManager.LoadScene(currentWorld.worldMapSceneName, LoadSceneMode.Single);
-        }
-    }
+
     [ServerRpc(RequireOwnership = true)]
     public void ApplyLoadedProgressServerRpc(FixedString32Bytes[] completedIds)
     {
@@ -172,6 +135,7 @@ public class GameFlowManager : NetworkBehaviour
             CompletedLevelIds.Add(id);
         }
     }
+
     [ServerRpc(RequireOwnership = true)]
     public void SelectWorldServerRpc(string worldId)
     {
@@ -182,6 +146,16 @@ public class GameFlowManager : NetworkBehaviour
             NetworkManager.Singleton.SceneManager.LoadScene(worldToLoad.worldMapSceneName, LoadSceneMode.Single);
         }
     }
+    public void ReturnToWorldMap()
+    {
+        if (!IsServer) return;
+        WorldDefinition currentWorld = GetCurrentWorldDefinition();
+        if (currentWorld != null)
+        {
+            NetworkManager.Singleton.SceneManager.LoadScene(currentWorld.worldMapSceneName, LoadSceneMode.Single);
+        }
+    }
+
     [ServerRpc(RequireOwnership = true)]
     public void StartLevelServerRpc(string levelSceneName)
     {
@@ -190,7 +164,8 @@ public class GameFlowManager : NetworkBehaviour
             NetworkManager.Singleton.SceneManager.LoadScene(levelSceneName, LoadSceneMode.Single);
         }
     }
-    [ServerRpc]
+
+    [ServerRpc(RequireOwnership = true)]
     public void CompleteLevelServerRpc(string levelId)
     {
         var fixedLevelId = new FixedString32Bytes(levelId);
@@ -198,7 +173,13 @@ public class GameFlowManager : NetworkBehaviour
         {
             CompletedLevelIds.Add(fixedLevelId);
         }
+        WorldDefinition currentWorld = GetCurrentWorldDefinition();
+        if (currentWorld != null)
+        {
+            NetworkManager.Singleton.SceneManager.LoadScene(currentWorld.worldMapSceneName, LoadSceneMode.Single);
+        }
     }
+
     public void StartSingleplayerGame(string sceneName)
     {
         IsMultiplayerSession = false;

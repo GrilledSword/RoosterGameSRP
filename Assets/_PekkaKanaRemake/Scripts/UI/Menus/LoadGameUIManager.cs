@@ -48,7 +48,7 @@ public class LoadGameUIManager : MonoBehaviour
         if (SaveManager.Instance.LoadGameData(slotIndex))
         {
             string loadedSceneName = SaveManager.Instance.CurrentlyLoadedData.lastSceneName;
-            GameFlowManager.Instance.StartGameFromLoad(loadedSceneName);
+            GameFlowManager.Instance.StartLevelServerRpc(loadedSceneName);
         }
     }
 }
