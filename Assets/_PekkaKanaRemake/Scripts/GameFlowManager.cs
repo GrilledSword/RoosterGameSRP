@@ -1,9 +1,10 @@
-using UnityEngine;
-using Unity.Netcode;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.SceneManagement;
-using Unity.Collections;
 using System.Linq;
+using Unity.Collections;
+using Unity.Netcode;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameFlowManager : NetworkBehaviour
 {
@@ -15,7 +16,7 @@ public class GameFlowManager : NetworkBehaviour
     private List<WorldDefinition> allWorlds;
     [SerializeField] private GameObject loadingScreenPanel;
     public bool IsMultiplayerSession { get; private set; } = false;
-
+    private bool _isLoadingFromSave = false;
     private LevelNodeDefinition _selectedLevel;
 
     void Awake()
@@ -43,36 +44,34 @@ public class GameFlowManager : NetworkBehaviour
     }
     private void OnSceneLoadCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        if (NetworkManager.Singleton.LocalClient.PlayerObject != null)
-        {
-            PekkaPlayerController localPlayer = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PekkaPlayerController>();
-            if (localPlayer != null)
-            {
-                localPlayer.SetPlayerControlActive(false);
-            }
-        }
-        ShowLoadingScreen(true);
         if (!IsServer) return;
-
-        foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
+        if (_isLoadingFromSave && SaveManager.Instance?.CurrentlyLoadedData != null)
         {
-            if (!clientsCompleted.Contains(clientId))
+            var saveData = SaveManager.Instance.CurrentlyLoadedData;
+            var saveableEntities = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).OfType<ISaveable>();
+            foreach (ISaveable entity in saveableEntities)
             {
-                return;
+                entity.LoadData(saveData);
             }
-        }
+            foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
+            {
+                NetworkObject playerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
+                if (playerObject != null && saveData.playersData.TryGetValue(clientId.ToString(), out PlayerData playerData))
+                {
+                    var playerController = playerObject.GetComponent<PekkaPlayerController>();
+                    if (playerController != null)
+                    {
+                        playerController.TeleportPlayerClientRpc(playerData.position);
+                    }
+                }
+            }
 
-        if (SaveManager.Instance != null)
-        {
-            SaveManager.Instance.ResetLevelProgress();
+            _isLoadingFromSave = false;
         }
-
-        LevelManager levelManager = FindFirstObjectByType<LevelManager>();
-        if (levelManager != null && _selectedLevel != null)
+        else
         {
-            levelManager.InitializeLevel(_selectedLevel);
+            PositionPlayersAtSpawnPoints();
         }
-        PositionPlayersAtSpawnPoints();
         StartGameClientRpc();
     }
     private void PositionPlayersAtSpawnPoints()
@@ -113,6 +112,12 @@ public class GameFlowManager : NetworkBehaviour
             }
         }
         ShowLoadingScreen(false);
+    }
+    public void StartGameFromLoad(string sceneName)
+    {
+        _isLoadingFromSave = true;
+        NetworkManager.Singleton.StartHost();
+        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
     }
     public void SetSelectedLevel(LevelNodeDefinition level)
     {

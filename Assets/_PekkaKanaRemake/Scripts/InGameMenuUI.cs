@@ -8,6 +8,7 @@ public class InGameMenuUI : MonoBehaviour
     [Header("UI Panelek")]
     [SerializeField] private GameObject menuPanel;
     [SerializeField] private GameObject settingsPanel;
+    [SerializeField] private GameObject savePanel;
 
     [Header("Gombok")]
     [SerializeField] private GameObject saveButton;
@@ -22,11 +23,25 @@ public class InGameMenuUI : MonoBehaviour
     {
         if (menuPanel) menuPanel.SetActive(false);
         if (settingsPanel) settingsPanel.SetActive(false);
+        if (savePanel) savePanel.SetActive(false);
         if (feedbackText) feedbackText.gameObject.SetActive(false);
     }
 
+    public bool IsMenuOpen() => isMenuOpen;
     public void Toggle()
     {
+
+        if (savePanel != null && savePanel.activeSelf)
+        {
+            OnBackFromSaveButtonClicked();
+            return;
+        }
+        if (settingsPanel != null && settingsPanel.activeSelf)
+        {
+            OnBackFromSettingsButtonClicked();
+            return;
+        }
+
         isMenuOpen = !isMenuOpen;
         menuPanel.SetActive(isMenuOpen);
 
@@ -35,14 +50,6 @@ public class InGameMenuUI : MonoBehaviour
             saveButton.SetActive(NetworkManager.Singleton.IsHost);
         }
 
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost)
-        {
-            bool isSinglePlayer = NetworkManager.Singleton.ConnectedClientsList.Count == 1;
-            if (isSinglePlayer)
-            {
-                Time.timeScale = isMenuOpen ? 0f : 1f;
-            }
-        }
     }
 
     public void OnContinueButtonClicked() => Toggle();
@@ -61,29 +68,27 @@ public class InGameMenuUI : MonoBehaviour
 
     public void OnSaveButtonClicked()
     {
-        if (SaveManager.Instance != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost)
-        {
-            SaveManager.Instance.SaveGame(0);
-            ShowFeedback("Játék mentve!");
-        }
+        menuPanel.SetActive(false);
+        savePanel.SetActive(true);
+    }
+
+    public void OnBackFromSaveButtonClicked()
+    {
+        savePanel.SetActive(false);
+        menuPanel.SetActive(true);
     }
 
     public void OnExitToMainMenuButtonClicked()
     {
         Time.timeScale = 1f;
-
-        // JAVÍTVA: Biztonságos leállás
         if (NetworkManager.Singleton != null)
         {
             NetworkManager.Singleton.Shutdown();
         }
-
-        // A Singleton minták miatt a duplikált menedzserek maguktól törlõdnek a jelenet betöltésekor,
-        // így nincs szükség manuális törlésre.
         SceneManager.LoadScene("MainMenuScene");
     }
 
-    private void ShowFeedback(string message)
+    public void ShowFeedback(string message)
     {
         if (feedbackText != null)
         {

@@ -102,6 +102,7 @@ public class Slots : NetworkBehaviour
     public void UseItemServerRpc(int slotIndex)
     {
         if (!IsServer) return;
+        if (InGameMenuManager.GameIsPaused) return;
         if (slotIndex < weaponSlotCount || slotIndex >= inventoryItems.Count || inventoryItems[slotIndex].isEmpty) return;
 
         ItemData itemToUse = inventoryItems[slotIndex];

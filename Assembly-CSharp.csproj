@@ -77,6 +77,7 @@
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\InGameMenuUI.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Gameplay\PlayerSoundController.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\LevelButtonUI.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\Core\PlayerData.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Utilities\CombineMesh.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Managers\SettingsManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\LevelSummaryUI.cs" />
@@ -94,6 +95,7 @@
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\GameFlowManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Managers\ItemManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\NetworkDiscovery.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\SavePanelUI.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Inventory\ItemData.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\SaveSlotUI.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\ScriptableObjects\ItemDefinition.cs" />

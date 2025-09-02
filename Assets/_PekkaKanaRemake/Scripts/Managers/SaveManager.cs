@@ -57,12 +57,20 @@ public class SaveManager : MonoBehaviour
     {
         _collectedItemsThisLevel.Clear();
     }
-    public void SaveGame(int slotIndex)
+    public void SaveGame(int slotIndex, string saveName)
     {
         if (slotIndex >= saveSlotCount) return;
         CommitLevelProgress();
 
         GameData newSaveData = new GameData();
+
+        if (string.IsNullOrWhiteSpace(saveName))
+        {
+            saveName = $"Mentés {DateTime.Now:yyyy.MM.dd HH:mm}";
+        }
+        newSaveData.saveName = saveName;
+
+
         if (GameFlowManager.Instance != null)
         {
             newSaveData.isMultiplayer = GameFlowManager.Instance.IsMultiplayerSession;

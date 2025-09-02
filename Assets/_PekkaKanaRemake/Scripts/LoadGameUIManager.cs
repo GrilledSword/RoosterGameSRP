@@ -20,7 +20,6 @@ public class LoadGameUIManager : MonoBehaviour
 
     public void RefreshSaveSlots()
     {
-        // Töröljük a régi gombokat.
         foreach (Transform child in saveSlotContainer)
         {
             Destroy(child.gameObject);
@@ -31,8 +30,6 @@ public class LoadGameUIManager : MonoBehaviour
             Debug.LogError("SaveManager.Instance nem található!");
             return;
         }
-
-        // Újra létrehozzuk a gombokat a friss adatok alapján.
         for (int i = 0; i < SaveManager.Instance.SaveSlotCount; i++)
         {
             GameObject buttonGO = Instantiate(saveSlotButtonPrefab, saveSlotContainer);
@@ -45,17 +42,13 @@ public class LoadGameUIManager : MonoBehaviour
             }
         }
     }
-
-    // JAVÍTVA: Hozzáadtuk a hiányzó metódust, amit a SaveSlotUI hív, amikor rákattintanak.
     public void OnSaveSlotClicked(int slotIndex)
     {
-        if (mainMenuUIManager != null)
+        Debug.Log($"Mentési hely {slotIndex} betöltése.");
+        if (SaveManager.Instance.LoadGameData(slotIndex))
         {
-            mainMenuUIManager.StartLoadFlow(slotIndex);
-        }
-        else
-        {
-            Debug.LogError("MainMenuUIManager referencia nincs beállítva!");
+            string loadedSceneName = SaveManager.Instance.CurrentlyLoadedData.lastSceneName;
+            GameFlowManager.Instance.StartGameFromLoad(loadedSceneName);
         }
     }
 }

@@ -13,10 +13,19 @@ public class GameData
     public List<ItemDataSerializable> inventoryItems;
     public List<string> completedLevelIds;
     public bool isMultiplayer;
+
+    public string saveName;
     public string lastUpdated;
     public string lastSceneName;
     public List<string> collectedItemIds = new List<string>();
-    public Vector3 cameraPosition;
+    public Dictionary<string, PlayerData> playersData;
+    public GameData()
+    {
+        this.saveName = "Üres mentés";
+        this.isMultiplayer = false;
+        this.collectedItemIds = new List<string>();
+        this.playersData = new Dictionary<string, PlayerData>();
+    }
 }
 
 [Serializable]
