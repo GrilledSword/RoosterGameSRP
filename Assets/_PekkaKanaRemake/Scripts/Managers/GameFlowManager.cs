@@ -31,6 +31,7 @@ public class GameFlowManager : NetworkBehaviour
 
         LoadAllWorldDefinitions();
     }
+
     public override void OnNetworkSpawn()
     {
         NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoadCompleted;
