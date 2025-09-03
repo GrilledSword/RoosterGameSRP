@@ -123,10 +123,12 @@ public class SaveManager : MonoBehaviour
         if (loadedData != null)
         {
             CurrentlyLoadedData = loadedData;
+            Debug.Log($"Betöltött mentés: jelenet = {loadedData.lastSceneName}");
             _permanentlyCollectedItemIds = new List<string>(loadedData.collectedItemIds);
             _collectedItemsThisLevel.Clear();
             return true;
         }
+        Debug.Log("Nincs mentés a kiválasztott slotban.");
         return false;
     }
     public void ClearLoadedData()

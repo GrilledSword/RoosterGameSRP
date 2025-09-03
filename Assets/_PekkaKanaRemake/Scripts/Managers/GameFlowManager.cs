@@ -101,6 +101,7 @@ public class GameFlowManager : NetworkBehaviour
     public void StartSingleplayerGame(string sceneName)
     {
         IsMultiplayerSession = false;
+        Debug.Log("Starting singleplayer game...");
         NetworkManager.Singleton.StartHost();
         NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
     }
@@ -108,6 +109,7 @@ public class GameFlowManager : NetworkBehaviour
     public void StartMultiplayerGameAsHost(string sceneName)
     {
         IsMultiplayerSession = true;
+        Debug.Log("Starting multiplayer game as host...");
         NetworkManager.Singleton.StartHost();
         NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
     }

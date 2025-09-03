@@ -93,6 +93,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SavePanelUI
   saveNameInputField: {fileID: 277968931409074993}
   inGameMenuUI: {fileID: 2859642903914760043}
+  _currentSlotIndex: 0
 --- !u!1 &343044615273135276
 GameObject:
   m_ObjectHideFlags: 0
@@ -779,8 +780,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2859642903914760043}
-        m_TargetAssemblyTypeName: InGameMenuUI, Assembly-CSharp
+      - m_Target: {fileID: 2290399038873456148}
+        m_TargetAssemblyTypeName: SavePanelUI, Assembly-CSharp
         m_MethodName: OnSaveButtonClicked
         m_Mode: 1
         m_Arguments:
@@ -2181,7 +2182,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 2859642903914760043}
         m_TargetAssemblyTypeName: InGameMenuUI, Assembly-CSharp
-        m_MethodName: OnSaveButtonClicked
+        m_MethodName: OnOpenSaveButtonClicked
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2390,6 +2391,7 @@ MonoBehaviour:
   saveButton: {fileID: 6779100190372858295}
   feedbackText: {fileID: 6160066119343906226}
   feedbackDuration: 2
+  isMenuOpen: 0
 --- !u!1 &7408687480164786453
 GameObject:
   m_ObjectHideFlags: 0
@@ -2511,9 +2513,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2290399038873456148}
-        m_TargetAssemblyTypeName: SavePanelUI, Assembly-CSharp
-        m_MethodName: OnSaveButtonClicked
+      - m_Target: {fileID: 2859642903914760043}
+        m_TargetAssemblyTypeName: InGameMenuUI, Assembly-CSharp
+        m_MethodName: OnBackFromSaveButtonClicked
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

@@ -10,22 +10,15 @@ public class GameData
     public float currentMana;
     public float currentStamina;
     public int score;
-    public List<ItemDataSerializable> inventoryItems;
-    public List<string> completedLevelIds;
-    public bool isMultiplayer;
+    public List<ItemDataSerializable> inventoryItems = new List<ItemDataSerializable>();
 
+    public List<string> completedLevelIds = new List<string>();
+    public bool isMultiplayer;
     public string saveName;
     public string lastUpdated;
     public string lastSceneName;
     public List<string> collectedItemIds = new List<string>();
-    public Dictionary<string, PlayerData> playersData;
-    public GameData()
-    {
-        this.saveName = "Üres mentés";
-        this.isMultiplayer = false;
-        this.collectedItemIds = new List<string>();
-        this.playersData = new Dictionary<string, PlayerData>();
-    }
+    public Dictionary<string, PlayerData> playersData = new Dictionary<string, PlayerData>();
 }
 
 [Serializable]

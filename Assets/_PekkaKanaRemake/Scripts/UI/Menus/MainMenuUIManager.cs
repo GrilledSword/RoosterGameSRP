@@ -230,8 +230,10 @@ public class MainMenuUIManager : MonoBehaviour
     }
     public void OnSingleplayerButtonClicked()
     {
-        saveManager.ClearLoadedData();
+        saveManager.ClearLoadedData();               // Törli a betöltött mentést (reset!)
+        saveManager.IsLoading = false;               // Biztosan ne próbáljon mentést betölteni
         loadingPopUpManager.ShowLoadingPopUp();
+
         if (worldSelectPanel != null)
         {
             mainPanel.SetActive(false);
@@ -243,7 +245,7 @@ public class MainMenuUIManager : MonoBehaviour
             Debug.Log("Single Player gomb megnyomva, játék indítása...");
             if (GameFlowManager.Instance != null)
             {
-                GameFlowManager.Instance.StartSingleplayerGame("World1_MapScene");
+                GameFlowManager.Instance.StartSingleplayerGame("World1_MapScene"); // vagy az elsõ pálya
             }
         }
     }
@@ -251,6 +253,7 @@ public class MainMenuUIManager : MonoBehaviour
     public void OnMultiplayerButtonClicked()
     {
         saveManager.ClearLoadedData();
+        saveManager.IsLoading = false;
         loadingPopUpManager.ShowLoadingPopUp();
         ShowPanel(multiplayerPanel);
         if (serverListManager != null) serverListManager.RefreshServerList();

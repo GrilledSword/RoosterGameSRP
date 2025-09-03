@@ -22,6 +22,7 @@ public class LevelSummaryUI : MonoBehaviour
     [SerializeField] private int pointsPerSecond = 10;
     [SerializeField] private int pointsPerHealth = 50;
     [SerializeField] private AudioClip countSound;
+    //[SerializeField] private float countSoundTick = 1.0f;
     [SerializeField] private AudioClip finalScoreSound;
 
     private AudioSource audioSource;

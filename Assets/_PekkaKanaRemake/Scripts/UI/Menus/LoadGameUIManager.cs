@@ -44,11 +44,13 @@ public class LoadGameUIManager : MonoBehaviour
     }
     public void OnSaveSlotClicked(int slotIndex)
     {
-        Debug.Log($"Mentési hely {slotIndex} betöltése.");
-        if (SaveManager.Instance.LoadGameData(slotIndex))
+        if (mainMenuUIManager != null)
         {
-            string loadedSceneName = SaveManager.Instance.CurrentlyLoadedData.lastSceneName;
-            GameFlowManager.Instance.StartLevelServerRpc(loadedSceneName);
+            mainMenuUIManager.StartLoadFlow(slotIndex);
+        }
+        else
+        {
+            Debug.LogError("MainMenuUIManager referencia nincs beállítva!");
         }
     }
 }

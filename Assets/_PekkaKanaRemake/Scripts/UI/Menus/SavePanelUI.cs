@@ -4,10 +4,10 @@ using TMPro;
 public class SavePanelUI : MonoBehaviour
 {
     [Header("UI Elemek")]
-    [SerializeField] private TMP_InputField saveNameInputField;
+    public TMP_InputField saveNameInputField;
     [SerializeField] private InGameMenuUI inGameMenuUI;
 
-    private int _currentSlotIndex = 0;
+    public int _currentSlotIndex = 0;
 
     public void OnSaveButtonClicked()
     {

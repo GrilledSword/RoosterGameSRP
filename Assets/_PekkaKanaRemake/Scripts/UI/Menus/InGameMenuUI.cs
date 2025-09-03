@@ -70,10 +70,10 @@ public class InGameMenuUI : MonoBehaviour
         menuPanel.SetActive(true);
     }
 
-    public void OnSaveButtonClicked()
+    public void OnOpenSaveButtonClicked()
     {
-        menuPanel.SetActive(false);
         savePanel.SetActive(true);
+        menuPanel.SetActive(false);
     }
 
     public void OnBackFromSaveButtonClicked()

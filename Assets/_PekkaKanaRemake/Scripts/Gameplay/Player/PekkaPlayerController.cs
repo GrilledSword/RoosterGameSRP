@@ -979,13 +979,14 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     public void SaveData(ref GameData data)
     {
         data.playerPosition = transform.position;
-        data.currentHealth = this.currentHealth.Value;
-        data.currentMana = this.currentMana.Value;
-        data.currentStamina = this.currentStamina.Value;
-        data.score = this.score.Value;
+        data.currentHealth = currentHealth.Value;
+        data.currentMana = currentMana.Value;
+        data.currentStamina = currentStamina.Value;
+        data.score = score.Value;
+
         if (components.slots != null)
         {
-            data.inventoryItems = new List<ItemDataSerializable>();
+            data.inventoryItems.Clear();
             foreach (var item in components.slots.GetInventoryItems())
             {
                 data.inventoryItems.Add(new ItemDataSerializable
@@ -994,14 +995,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
                     quantity = item.quantity,
                     isEmpty = item.isEmpty
                 });
-            }
-        }
-        if (IsOwner)
-        {
-            var virtualCamera = FindFirstObjectByType<CinemachineCamera>();
-            if (virtualCamera != null)
-            {
-                //data.cameraPosition = virtualCamera.transform.position;
             }
         }
     }

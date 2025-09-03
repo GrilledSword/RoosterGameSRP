@@ -22,7 +22,7 @@ public class Goal : NetworkBehaviour
         if (playerController == null) return;
 
         ulong clientId = playerController.OwnerClientId;
-        if (finishedPlayers.Contains(clientId)) return; // Már célba ért
+        if (finishedPlayers.Contains(clientId)) return;
 
         finishedPlayers.Add(clientId);
         LevelManager levelManager = FindFirstObjectByType<LevelManager>();
@@ -39,7 +39,7 @@ public class Goal : NetworkBehaviour
             {
                 levelManager.StartLevelEndSequence();
             }
-            finishedPlayers.Clear(); // következõ pályához reset
+            finishedPlayers.Clear();
         }
 
         gameObject.SetActive(false);
