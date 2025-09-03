@@ -52,7 +52,7 @@ public class InGameMenuUI : MonoBehaviour
 
         PekkaPlayerController localPlayer = FindFirstObjectByType<PekkaPlayerController>();
         if (localPlayer != null && localPlayer.IsOwner)
-            localPlayer.SetPlayerControlActive(!isMenuOpen); // Itt a lényeg!!
+            localPlayer.SetPlayerControlActive(!isMenuOpen);
 
     }
 

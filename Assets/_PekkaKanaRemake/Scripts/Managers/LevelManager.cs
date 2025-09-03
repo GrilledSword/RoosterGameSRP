@@ -12,10 +12,12 @@ public class LevelManager : NetworkBehaviour
     [Header("UI References")]
     [SerializeField] private GameObject goalTextObject;
     private const string goalTextObjectName = "EndLevelUI";
-    private TextMeshProUGUI timerText;
+    [SerializeField] private TextMeshProUGUI timerText;
     private const string TimerObjectName = "InGameClock";
-    private LevelSummaryUI levelSummaryUI;
+    [SerializeField] private LevelSummaryUI levelSummaryUI;
     private const string levelSummaryUIName = "LevelSummaryUI";
+    [SerializeField] private TextMeshProUGUI goalStatusText;
+    private const string goalStatusTextName = "GoalStatusText";
 
     [Header("Settings")]
     [SerializeField] private float goalTextDisplayTime = 2.0f;
@@ -40,6 +42,24 @@ public class LevelManager : NetworkBehaviour
         FindMissingTexts();
         levelSummaryUI = FindFirstObjectByType<LevelSummaryUI>();
         if (goalTextObject != null) goalTextObject.SetActive(false);
+
+        if (GameFlowManager.Instance != null && GameFlowManager.Instance.IsMultiplayerSession)
+        {
+            var allPlayers = FindObjectsByType<PekkaPlayerController>(FindObjectsSortMode.None);
+            foreach (var player in allPlayers)
+            {
+                if (player.IsServer)
+                    player.score.Value = 0;
+            }
+        }
+        else
+        {
+            PekkaPlayerController player = FindFirstObjectByType<PekkaPlayerController>();
+            if (player != null && player.IsServer)
+            {
+                player.score.Value = 0;
+            }
+        }
 
         if (currentLevel.hasTimeLimit)
         {
@@ -70,11 +90,27 @@ public class LevelManager : NetworkBehaviour
             KillPlayer();
         }
     }
+    [ClientRpc]
+    public void UpdateGoalStatusClientRpc(int finished, int total)
+    {
+        if (goalStatusText != null)
+        {
+            if (finished >= total)
+            {
+                goalStatusText.text = ""; // Mindenki célba ért
+            }
+            else
+            {
+                goalStatusText.text = $"Várakozás a többi játékosra... {finished}/{total}";
+            }
+        }
+    }
     public void StartLevelEndSequence()
     {
         if (_levelCompleted || !IsServer) return;
         _levelCompleted = true;
         _isTimerRunning = false;
+        if (goalStatusText != null) goalStatusText.text = "";
 
         GameFlowManager.Instance.CompleteLevelServerRpc(currentLevel.levelId);
 
@@ -163,6 +199,10 @@ public class LevelManager : NetworkBehaviour
         {
             levelSummaryUI = summaryObject.GetComponent<LevelSummaryUI>();
         }
+        GameObject goalStatusObject = GameObject.Find(goalStatusTextName);
+        if (goalStatusObject != null)
+        {
+            goalStatusText = goalStatusObject.GetComponentInChildren<TextMeshProUGUI>();
+        }
     }
 }
-
