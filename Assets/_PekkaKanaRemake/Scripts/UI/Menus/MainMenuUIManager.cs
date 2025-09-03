@@ -15,6 +15,7 @@ public class MainMenuUIManager : MonoBehaviour
     [SerializeField] private ServerListManager serverListManager;
     [SerializeField] private GameFlowManager gameFlowManager;
     [SerializeField] private SaveManager saveManager;
+    [SerializeField] private LoadingPopUpManager loadingPopUpManager;
 
     [Header("Panelek")]
     [SerializeField] private GameObject mainPanel;
@@ -230,6 +231,7 @@ public class MainMenuUIManager : MonoBehaviour
     public void OnSingleplayerButtonClicked()
     {
         saveManager.ClearLoadedData();
+        loadingPopUpManager.ShowLoadingPopUp();
         if (worldSelectPanel != null)
         {
             mainPanel.SetActive(false);
@@ -249,6 +251,7 @@ public class MainMenuUIManager : MonoBehaviour
     public void OnMultiplayerButtonClicked()
     {
         saveManager.ClearLoadedData();
+        loadingPopUpManager.ShowLoadingPopUp();
         ShowPanel(multiplayerPanel);
         if (serverListManager != null) serverListManager.RefreshServerList();
     }

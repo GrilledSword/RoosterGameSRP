@@ -10,13 +10,6 @@ public class WorldButtonUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI progressText;
     [SerializeField] private Image worldIconImage;
     [SerializeField] private Button button;
-
-    /// <summary>
-    /// Beállítja a gombot a világ és a mentési adatok alapján.
-    /// </summary>
-    /// <param name="world">A világ definíciója.</param>
-    /// <param name="progressData">A betöltött mentés adatai (lehet null).</param>
-    /// <param name="onClickAction">A mûvelet, ami kattintáskor lefut.</param>
     public void Setup(WorldDefinition world, GameData progressData, System.Action onClickAction)
     {
         worldNameText.text = world.worldName;

@@ -200,7 +200,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         if (components.soundController == null) components.soundController = GetComponent<PlayerSoundController>();
         InitializeSpriteMap();
     }
-    private CinemachineCamera _vcam;
     public override void OnNetworkSpawn()
     {
         if (IsServer)
@@ -216,11 +215,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
 
         if (IsOwner)
         {
-            _vcam = FindFirstObjectByType<CinemachineCamera>();
-            if (_vcam != null)
-            {
-                _vcam.Follow = transform;
-            }
             SubscribeToOwnerEvents();
             InitializeOwner();
         }
@@ -234,10 +228,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     }
     void Update()
     {
-        if (InGameMenuManager.GameIsPaused)
-        {
-            return;
-        }
         if (IsOwner)
         {
             OwnerTick();
@@ -403,7 +393,6 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     private void OnMenuPerformed(InputAction.CallbackContext ctx) => ToggleInGameMenu();
     private void OnAttackInput(int slotIndex)
     {
-
         if (IsOwner) RequestAttackServerRpc(slotIndex);
     }
     private void OnUseItemInput(int slotIndex)
@@ -550,16 +539,17 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     private void RequestAttackServerRpc(int slotIndex)
     {
         if (isAttackOnCooldown.Value || isDead.Value || components.slots == null) return;
-        if(InGameMenuManager.GameIsPaused) return;
 
         ItemData weaponData = components.slots.GetItemAt(slotIndex);
         if (weaponData.isEmpty) return;
 
+        // JAVÍTVA: Átálltunk a WeaponItemDefinition használatára
         if (ItemManager.Instance.GetItemDefinition(weaponData.itemID) is not WeaponItemDefinition weaponDef || weaponDef.projectilePrefab == null)
         {
             return;
         }
-       
+
+        // JAVÍTVA: Élesítettük a mana és stamina költségek ellenőrzését és levonását
         if (weaponDef.manaCost > 0)
         {
             if (currentMana.Value < weaponDef.manaCost) return; // Nincs elég mana
@@ -589,6 +579,25 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     #endregion
 
     #region Karakter Állapotok (Élet, Mana, Sebzés)
+    public void TakeDamage(float damage, Faction sourceFaction)
+    {
+        if (IsServer)
+        {
+            if (isDead.Value || isInvincible.Value) return;
+
+            currentHealth.Value -= damage;
+            if (components.soundController != null) components.soundController.PlayDamageSoundClientRpc();
+
+            if (damageInvincibilityCoroutine != null) StopCoroutine(damageInvincibilityCoroutine);
+            damageInvincibilityCoroutine = StartCoroutine(DamageInvincibilityCoroutine());
+
+            if (currentHealth.Value <= 0)
+            {
+                currentHealth.Value = 0;
+                DieServerRpc();
+            }
+        }
+    }
     [ServerRpc(RequireOwnership = false)]
     public void HealServerRpc(float amount)
     {
@@ -670,23 +679,14 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
         isDead.Value = false;
         TeleportPlayerClientRpc(spawnPosition); // Újrahasznosítjuk a teleport RPC-t
     }
-    public void TakeDamage(float damage, Faction sourceFaction)
+    [ServerRpc]
+    public void CompleteLevelServerRpc()
     {
-        if (IsServer)
+        LevelManager levelManager = FindFirstObjectByType<LevelManager>();
+        if (levelManager != null)
         {
-            if (isDead.Value || isInvincible.Value) return;
-
-            currentHealth.Value -= damage;
-            if (components.soundController != null) components.soundController.PlayDamageSoundClientRpc();
-
-            if (damageInvincibilityCoroutine != null) StopCoroutine(damageInvincibilityCoroutine);
-            damageInvincibilityCoroutine = StartCoroutine(DamageInvincibilityCoroutine());
-
-            if (currentHealth.Value <= 0)
-            {
-                currentHealth.Value = 0;
-                DieServerRpc();
-            }
+            Debug. Log("Level complete requested by player.");
+            levelManager.StartLevelEndSequence();
         }
     }
     #endregion
@@ -978,23 +978,38 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     #region Mentés és Betöltés
     public void SaveData(ref GameData data)
     {
-        if (data.playersData.ContainsKey(OwnerClientId.ToString()))
+        data.playerPosition = transform.position;
+        data.currentHealth = this.currentHealth.Value;
+        data.currentMana = this.currentMana.Value;
+        data.currentStamina = this.currentStamina.Value;
+        data.score = this.score.Value;
+        if (components.slots != null)
         {
-            PlayerData playerData = data.playersData[OwnerClientId.ToString()];
-            playerData.position = transform.position;
-        }
-        else
-        {
-            data.playersData.Add(OwnerClientId.ToString(), new PlayerData
+            data.inventoryItems = new List<ItemDataSerializable>();
+            foreach (var item in components.slots.GetInventoryItems())
             {
-                position = transform.position
-            });
+                data.inventoryItems.Add(new ItemDataSerializable
+                {
+                    itemID = item.itemID,
+                    quantity = item.quantity,
+                    isEmpty = item.isEmpty
+                });
+            }
+        }
+        if (IsOwner)
+        {
+            var virtualCamera = FindFirstObjectByType<CinemachineCamera>();
+            if (virtualCamera != null)
+            {
+                //data.cameraPosition = virtualCamera.transform.position;
+            }
         }
     }
     public void LoadData(GameData data)
     {
         if (IsServer)
         {
+            transform.position = data.playerPosition;
             if (TryGetComponent<Rigidbody>(out var rb))
             {
                 rb.linearVelocity = Vector3.zero;
@@ -1009,19 +1024,18 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
                 components.slots.LoadInventoryData(data.inventoryItems);
             }
         }
+        if (IsOwner)
+        {
+            var virtualCamera = FindFirstObjectByType<CinemachineCamera>();
+            if (virtualCamera != null)
+            {
+                //virtualCamera.transform.position = data.cameraPosition;
+            }
+        }
     }
     #endregion
 
     #region Segédfüggvények és Gizmos
-    [ClientRpc]
-    public void TeleportPlayerClientRpc(Vector3 position, ClientRpcParams clientRpcParams = default)
-    {
-        transform.position = position;
-        if (IsOwner && _vcam != null)
-        {
-            _vcam.PreviousStateIsValid = false;
-        }
-    }
     private void StopStaminaRegen()
     {
         if (staminaRegenCoroutine != null)

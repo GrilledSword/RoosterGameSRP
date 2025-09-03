@@ -18,6 +18,8 @@ GameObject:
   - component: {fileID: 2339289935216149988}
   - component: {fileID: 7020206841360394733}
   - component: {fileID: 4490692876537488455}
+  - component: {fileID: 51255985989103585}
+  - component: {fileID: 8957689431922292958}
   m_Layer: 0
   m_Name: _Managers
   m_TagString: Untagged
@@ -111,6 +113,7 @@ MonoBehaviour:
   serverListManager: {fileID: 7492297030455877322}
   gameFlowManager: {fileID: 7440753609223204486}
   saveManager: {fileID: 8238983543314161970}
+  loadingPopUpManager: {fileID: 8957689431922292958}
   mainPanel: {fileID: 0}
   multiplayerPanel: {fileID: 0}
   settingsPanel: {fileID: 0}
@@ -187,7 +190,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 21b8158a239895841aba0ed83526f3b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelManager
-  timerText: {fileID: 0}
+  ShowTopMostFoldoutHeaderGroup: 1
+  goalTextObject: {fileID: 0}
+  goalTextDisplayTime: 2
+--- !u!114 &51255985989103585
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 421219700653306331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e329b65e50eb6a94888052b72de46a9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpawnManager
+--- !u!114 &8957689431922292958
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 421219700653306331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf18ca15e6fa6cd428481ead0a468c9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LoadingPopUpManager
+  loadingPopUp: {fileID: 6480163239430103293}
+  displayDuration: 2
 --- !u!1 &2909173793802195016
 GameObject:
   m_ObjectHideFlags: 0
@@ -360,7 +391,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 36.4126, y: 20.48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1163901697662482940
 CanvasRenderer:
@@ -383,7 +414,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.9490196}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -451,16 +482,16 @@ Canvas:
   m_RenderMode: 0
   m_Camera: {fileID: 0}
   m_PlaneDistance: 100
-  m_PixelPerfect: 0
+  m_PixelPerfect: 1
   m_ReceivesEvents: 1
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
-  m_VertexColorAlwaysGammaSpace: 0
-  m_AdditionalShaderChannelsFlag: 25
+  m_VertexColorAlwaysGammaSpace: 1
+  m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 16
   m_TargetDisplay: 0
 --- !u!114 &6977354077409987786
 MonoBehaviour:

@@ -37,10 +37,6 @@ public class LevelSummaryUI : MonoBehaviour
         summaryPanel.SetActive(false);
         continueButton.onClick.AddListener(OnContinueClicked);
     }
-
-    /// <summary>
-    /// Displays the summary panel and starts the score animation.
-    /// </summary>
     public void ShowSummary(int baseScore, float remainingTime, int remainingHealth)
     {
         if (summaryPanel.activeSelf) return;

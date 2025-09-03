@@ -73,6 +73,7 @@
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\UI\HUD\LevelSummaryUI.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Gameplay\Inventory\Slots.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\ScriptableObjects\Items\PowerUpItemDefinition.cs" />
+    <Compile Include="Assets\_PekkaKanaRemake\Scripts\UI\Menus\LoadingPopUpManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\UI\Menus\MainMenuUIManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Managers\WorldMapManager.cs" />
     <Compile Include="Assets\_PekkaKanaRemake\Scripts\Core\Data\PlayerData.cs" />

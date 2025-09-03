@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+
 public class LevelButtonUI : MonoBehaviour
 {
     [Header("Komponens Referenciák")]
@@ -9,19 +10,21 @@ public class LevelButtonUI : MonoBehaviour
     [SerializeField] private GameObject lockIcon;
 
     private LevelNodeDefinition levelData;
-    private GameFlowManager gameFlowManager;
+    private GameFlowManager gameFlowManager; // Referencia a menedzserre
 
+    // JAVÍTVA: A Setup metódus most már megkapja a GameFlowManager referenciáját,
+    // így a WorldMapManager nem ad hibát.
     public void Setup(LevelNodeDefinition node, GameFlowManager flowManager)
     {
         this.levelData = node;
         this.gameFlowManager = flowManager;
-        this.levelNameText.text = levelData.levelName;
 
         if (levelNameText != null)
         {
             levelNameText.text = node.levelName;
         }
 
+        button.onClick.RemoveAllListeners(); // Elõzõ listener-ek törlése
         button.onClick.AddListener(OnButtonClicked);
     }
 
@@ -39,10 +42,13 @@ public class LevelButtonUI : MonoBehaviour
 
     private void OnButtonClicked()
     {
-        if (Unity.Netcode.NetworkManager.Singleton.IsHost)
+        // JAVÍTVA: Közvetlen parancsot küldünk a szervernek a pálya elindítására.
+        // Ezt bármelyik kliens megteheti, a szerver majd betölti mindenkinek.
+        if (gameFlowManager != null && levelData != null)
         {
+            // A StartLevelServerRpc metódust használjuk, ami minden kliensnek betölti a pályát.
             gameFlowManager.StartLevelServerRpc(levelData.levelSceneName);
-            GameFlowManager.Instance.SetSelectedLevel(levelData);
         }
     }
 }
+

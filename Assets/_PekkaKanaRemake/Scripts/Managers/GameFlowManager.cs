@@ -1,21 +1,20 @@
-using UnityEngine;
-using Unity.Netcode;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.SceneManagement;
-using Unity.Collections;
 using System.Linq;
+using Unity.Collections;
+using Unity.Netcode;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameFlowManager : NetworkBehaviour
 {
     public static GameFlowManager Instance { get; private set; }
 
-    private NetworkVariable<FixedString32Bytes> currentWorldId = new NetworkVariable<FixedString32Bytes>(
-        default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<FixedString32Bytes> currentWorldId = new NetworkVariable<FixedString32Bytes>();
     public NetworkList<FixedString32Bytes> CompletedLevelIds { get; private set; } = new NetworkList<FixedString32Bytes>();
     private List<WorldDefinition> allWorlds;
     [SerializeField] private GameObject loadingScreenPanel;
     public bool IsMultiplayerSession { get; private set; } = false;
-    public static LevelNodeDefinition SelectedLevel { get; private set; }
 
     void Awake()
     {
@@ -26,12 +25,15 @@ public class GameFlowManager : NetworkBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-
         LoadAllWorldDefinitions();
     }
+
     public override void OnNetworkSpawn()
     {
-        NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoadCompleted;
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
+        {
+            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoadCompleted;
+        }
     }
 
     public override void OnNetworkDespawn()
@@ -44,22 +46,19 @@ public class GameFlowManager : NetworkBehaviour
 
     private void OnSceneLoadCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        ShowLoadingScreen(true);
         if (!IsServer) return;
 
-        // Megvárjuk, amíg minden kliens betölti a jelenetet
-        foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
+        LevelManager levelManager = FindFirstObjectByType<LevelManager>();
+        if (levelManager != null)
         {
-            if (!clientsCompleted.Contains(clientId))
+            LevelNodeDefinition levelDef = FindLevelBySceneName(sceneName);
+            if (levelDef != null)
             {
-                // Még nem mindenki végzett, várunk a következõ callback-re
-                return;
+                levelManager.InitializeLevel(levelDef);
             }
         }
 
-        // Ha ide eljutottunk, mindenki betöltötte a pályát.
-        // Most spawnoljuk a játékosokat a megfelelõ helyekre.
-        if (SpawnManager.Instance != null && sceneName != "MainMenuScene" && sceneName != "World1_MapScene")
+        if (SpawnManager.Instance != null && !sceneName.Contains("MapScene") && sceneName != "MainMenuScene")
         {
             foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
             {
@@ -71,45 +70,20 @@ public class GameFlowManager : NetworkBehaviour
                 }
             }
         }
-
-        // Miután minden játékos a helyén van, elindítjuk a játékot
         StartGameClientRpc();
     }
 
     [ClientRpc]
     private void StartGameClientRpc()
     {
-        // Itt már csak a UI-t és a vezérlést kezeljük, a teleportálás korábban megtörtént
-        if (NetworkManager.Singleton.LocalClient.PlayerObject != null)
-        {
-            PekkaPlayerController localPlayer = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PekkaPlayerController>();
-            if (localPlayer != null)
-            {
-                localPlayer.SetPlayerControlActive(true);
-            }
-        }
         ShowLoadingScreen(false);
-    }
-    public void SetSelectedLevel(LevelNodeDefinition levelData)
-    {
-        SelectedLevel = levelData;
     }
 
     private void ShowLoadingScreen(bool show)
     {
-        if (loadingScreenPanel == null)
-        {
-            // Robusztusabb keresés, ha a panel esetleg inaktív
-            loadingScreenPanel = Resources.FindObjectsOfTypeAll<GameObject>().FirstOrDefault(g => g.name == "LoadingScreenPanel");
-        }
-
         if (loadingScreenPanel != null)
         {
             loadingScreenPanel.SetActive(show);
-        }
-        else if (show)
-        {
-            Debug.LogError("LoadingScreenPanel not found in the project!");
         }
     }
 
@@ -117,22 +91,33 @@ public class GameFlowManager : NetworkBehaviour
     {
         allWorlds = new List<WorldDefinition>(Resources.LoadAll<WorldDefinition>("Worlds"));
     }
-
     public List<WorldDefinition> GetAllWorlds() => allWorlds;
-
     public WorldDefinition GetCurrentWorldDefinition()
     {
         if (string.IsNullOrEmpty(currentWorldId.Value.ToString())) return null;
         return allWorlds.FirstOrDefault(world => world.worldId == currentWorldId.Value.ToString());
     }
 
-    [ServerRpc(RequireOwnership = true)]
-    public void ApplyLoadedProgressServerRpc(FixedString32Bytes[] completedIds)
+    public void StartSingleplayerGame(string sceneName)
     {
-        CompletedLevelIds.Clear();
-        foreach (var id in completedIds)
+        IsMultiplayerSession = false;
+        NetworkManager.Singleton.StartHost();
+        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+    }
+
+    public void StartMultiplayerGameAsHost(string sceneName)
+    {
+        IsMultiplayerSession = true;
+        NetworkManager.Singleton.StartHost();
+        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void StartLevelServerRpc(string levelSceneName)
+    {
+        if (!string.IsNullOrEmpty(levelSceneName))
         {
-            CompletedLevelIds.Add(id);
+            NetworkManager.Singleton.SceneManager.LoadScene(levelSceneName, LoadSceneMode.Single);
         }
     }
 
@@ -146,6 +131,17 @@ public class GameFlowManager : NetworkBehaviour
             NetworkManager.Singleton.SceneManager.LoadScene(worldToLoad.worldMapSceneName, LoadSceneMode.Single);
         }
     }
+
+    [ServerRpc(RequireOwnership = true)]
+    public void CompleteLevelServerRpc(string levelId)
+    {
+        var fixedLevelId = new FixedString32Bytes(levelId);
+        if (!CompletedLevelIds.Contains(fixedLevelId))
+        {
+            CompletedLevelIds.Add(fixedLevelId);
+        }
+    }
+
     public void ReturnToWorldMap()
     {
         if (!IsServer) return;
@@ -157,51 +153,25 @@ public class GameFlowManager : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = true)]
-    public void StartLevelServerRpc(string levelSceneName)
+    public void ApplyLoadedProgressServerRpc(FixedString32Bytes[] completedIds)
     {
-        if (!string.IsNullOrEmpty(levelSceneName))
+        CompletedLevelIds.Clear();
+        foreach (var id in completedIds)
         {
-            NetworkManager.Singleton.SceneManager.LoadScene(levelSceneName, LoadSceneMode.Single);
+            CompletedLevelIds.Add(id);
         }
     }
 
-    [ServerRpc(RequireOwnership = true)]
-    public void CompleteLevelServerRpc(string levelId)
+    private LevelNodeDefinition FindLevelBySceneName(string sceneName)
     {
-        var fixedLevelId = new FixedString32Bytes(levelId);
-        if (!CompletedLevelIds.Contains(fixedLevelId))
+        foreach (var world in allWorlds)
         {
-            CompletedLevelIds.Add(fixedLevelId);
+            foreach (var level in world.levels)
+            {
+                if (level.levelSceneName == sceneName) return level;
+            }
         }
-        WorldDefinition currentWorld = GetCurrentWorldDefinition();
-        if (currentWorld != null)
-        {
-            NetworkManager.Singleton.SceneManager.LoadScene(currentWorld.worldMapSceneName, LoadSceneMode.Single);
-        }
-    }
-
-    public void StartSingleplayerGame(string sceneName)
-    {
-        IsMultiplayerSession = false;
-        NetworkManager.Singleton.StartHost();
-        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
-    }
-    public void StartMultiplayerGameAsHost(string sceneName)
-    {
-        IsMultiplayerSession = true;
-        NetworkManager.Singleton.StartHost();
-        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
-    }
-    public void LoadLevelAsHost(string sceneName)
-    {
-        if (NetworkManager.Singleton.IsListening)
-        {
-            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
-        }
-        else
-        {
-            StartSingleplayerGame(sceneName);
-        }
+        return null;
     }
 }
 
