@@ -17,7 +17,7 @@ public class InGameMenuUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI feedbackText;
     [SerializeField] private float feedbackDuration = 2f;
 
-    private bool isMenuOpen = false;
+    public bool isMenuOpen = false;
 
     void Start()
     {

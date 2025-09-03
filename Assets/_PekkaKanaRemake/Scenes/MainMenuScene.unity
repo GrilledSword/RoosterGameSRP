@@ -1255,6 +1255,10 @@ PrefabInstance:
       propertyPath: serverNameInputField
       value: 
       objectReference: {fileID: 227650645}
+    - target: {fileID: 7020206841360394733, guid: 2d97a72a28297c247a8af52ad54785b0, type: 3}
+      propertyPath: inGameMenuPrefab
+      value: 
+      objectReference: {fileID: 7122100247793096042, guid: 30ff48921ed75a148a138f7234217a21, type: 3}
     - target: {fileID: 7492297030455877322, guid: 2d97a72a28297c247a8af52ad54785b0, type: 3}
       propertyPath: networkManager
       value: 

@@ -101,6 +101,7 @@ public class ComponentReferences
     public GameObject cameraRoot;
     [Tooltip("A karakter inventory-ját kezelő szkript.")]
     public Slots slots;
+    public InGameMenuUI inGameMenuUI;
 }
 
 [System.Serializable]
@@ -932,6 +933,8 @@ public class PekkaPlayerController : NetworkBehaviour, IDamageable, ISaveable
     {
         if (IsOwner && ui.inGameMenuManager != null)
         {
+            components.inGameMenuUI = FindAnyObjectByType<InGameMenuUI>();
+            SetPlayerControlActive(components.inGameMenuUI.isMenuOpen);
             ui.inGameMenuManager.ToggleMenu();
         }
     }

@@ -176,7 +176,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 948f65d2671176642bf146aa27dab7c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inGameMenuPrefab: {fileID: 7122100247793096042, guid: 30ff48921ed75a148a138f7234217a21, type: 3}
+  inGameMenuPrefab: {fileID: 0}
   _currentMenuInstance: {fileID: 0}
 --- !u!114 &4490692876537488455
 MonoBehaviour:

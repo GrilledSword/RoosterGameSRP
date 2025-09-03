@@ -43,17 +43,13 @@ public class InGameMenuManager : MonoBehaviour
                 GameObject menuObject = Instantiate(inGameMenuPrefab);
                 _currentMenuInstance = menuObject.GetComponent<InGameMenuUI>();
             }
-            if (_currentMenuInstance == null)
-            {
-                Debug.LogError("InGameMenuManager: Nem sikerült megtalálni vagy létrehozni az InGameMenuUI-t! Ellenõrizd, hogy a prefab be van-e húzva az Inspectorban, és hogy a prefabon van InGameMenuUI szkript.");
-                return;
-            }
         }
     }
     public void ToggleMenu()
     {
-        if (_currentMenuInstance == null) return;
-        _currentMenuInstance.Toggle();
-        GameIsPaused = _currentMenuInstance.IsMenuOpen();
+        if (_currentMenuInstance != null)
+        {
+            _currentMenuInstance.Toggle();
+        }
     }
 }

@@ -113,6 +113,8 @@ public class LevelManager : NetworkBehaviour
             int baseScore = localPlayer.score.Value;
             int health = (int)localPlayer.currentHealth.Value;
             levelSummaryUI.ShowSummary(baseScore, _remainingTime, health);
+
+            localPlayer.SetPlayerControlActive(true);
         }
         else
         {
