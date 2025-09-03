@@ -7,7 +7,7 @@ using UnityEngine;
 public class Goal : NetworkBehaviour
 {
     [SerializeField] private string playerTag = "Player";
-    private static HashSet<ulong> finishedPlayers = new HashSet<ulong>();
+    [SerializeField] private static HashSet<ulong> finishedPlayers = new HashSet<ulong>();
 
     private void Awake()
     {
@@ -21,12 +21,10 @@ public class Goal : NetworkBehaviour
         PekkaPlayerController playerController = other.GetComponent<PekkaPlayerController>();
         if (playerController == null) return;
 
-        ulong playerId = playerController.OwnerClientId;
-        if (finishedPlayers.Contains(playerId)) return; // Már célba ért
+        ulong clientId = playerController.OwnerClientId;
+        if (finishedPlayers.Contains(clientId)) return; // Már célba ért
 
-        finishedPlayers.Add(playerId);
-
-        // Frissítsük a cél státuszt minden kliensen
+        finishedPlayers.Add(clientId);
         LevelManager levelManager = FindFirstObjectByType<LevelManager>();
         if (levelManager != null)
         {
@@ -35,17 +33,15 @@ public class Goal : NetworkBehaviour
             levelManager.UpdateGoalStatusClientRpc(finished, total);
         }
 
-        // Ha mindenki célba ért (single/multi), pálya vége
         if (finishedPlayers.Count >= NetworkManager.Singleton.ConnectedClientsIds.Count)
         {
             if (levelManager != null)
             {
                 levelManager.StartLevelEndSequence();
             }
-            finishedPlayers.Clear(); // reset a következõ szinthez
+            finishedPlayers.Clear(); // következõ pályához reset
         }
 
-        // Az adott cél objektumot deaktiváljuk, hogy ne triggerelhessen újra
         gameObject.SetActive(false);
     }
 }

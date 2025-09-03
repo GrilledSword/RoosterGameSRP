@@ -16,7 +16,7 @@ public class LevelManager : NetworkBehaviour
     private const string TimerObjectName = "InGameClock";
     [SerializeField] private LevelSummaryUI levelSummaryUI;
     private const string levelSummaryUIName = "LevelSummaryUI";
-    [SerializeField] private TextMeshProUGUI goalStatusText;
+    [SerializeField] private TMPro.TextMeshProUGUI goalStatusText;
     private const string goalStatusTextName = "GoalStatusText";
 
     [Header("Settings")]
@@ -95,6 +95,7 @@ public class LevelManager : NetworkBehaviour
     {
         if (goalStatusText != null)
         {
+            goalStatusText.text = "";
             if (finished >= total)
             {
                 goalStatusText.text = ""; // Mindenki célba ért
