@@ -50,6 +50,10 @@ public class InGameMenuUI : MonoBehaviour
             saveButton.SetActive(NetworkManager.Singleton.IsHost);
         }
 
+        PekkaPlayerController localPlayer = FindFirstObjectByType<PekkaPlayerController>();
+        if (localPlayer != null && localPlayer.IsOwner)
+            localPlayer.SetPlayerControlActive(true);
+
     }
 
     public void OnContinueButtonClicked() => Toggle();
