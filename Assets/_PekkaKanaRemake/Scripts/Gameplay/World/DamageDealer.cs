@@ -30,8 +30,6 @@ public class DamageDealer : NetworkBehaviour
             if ((targetFactions & damageableTarget.Faction) != 0)
             {
  damageableTarget.TakeDamage(damageAmount, sourceFaction);
-
-                // Ha az objektumnak el kell pusztulnia, despawnoljuk.
                 if (destroyOnImpact)
                 {
                     if (TryGetComponent<NetworkObject>(out var networkObject))
